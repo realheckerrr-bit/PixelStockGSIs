@@ -38,7 +38,7 @@ bash "$SCRIPT_DIR/build_gsi_image.sh" "$SYSTEM_ROOT" "$OUTPUT_NAME" "$FS_TYPE" "
 
 BUILD_PROP=$(cat "$WORK_DIR/build-prop.path")
 bash "$SCRIPT_DIR/check_gsi_compatibility.sh" \
-  "$BUILD_PROP" "$TARGET_MODEL" "$OUTPUT_DIR/compatibility-report.txt" "$EXPECTED_ARCH"
+  "$BUILD_PROP" "$TARGET_MODEL" "$OUTPUT_DIR/compatibility-report.txt" "$EXPECTED_ARCH" "$SYSTEM_ROOT"
 
 printf '%s\n' "rebuilt-$FS_TYPE" > "$WORK_DIR/image-mode.txt"
 printf '%s\n' "$OUTPUT_NAME" > "$WORK_DIR/output-name.txt"

@@ -5,6 +5,7 @@ BUILD_PROP="${1:-}"
 TARGET_MODEL="${2:-generic}"
 REPORT="${3:-compatibility-report.txt}"
 EXPECTED_ARCH="${4:-arm64}"
+SYSTEM_ROOT="${5:-}"
 if [ -z "$BUILD_PROP" ] || [ ! -f "$BUILD_PROP" ]; then
   echo "[-] build.prop was not found: ${BUILD_PROP:-<empty>}" >&2
   exit 2
@@ -34,6 +35,25 @@ VENDOR_API_LEVEL="$(prop ro.vendor.api_level || true)"
 LLNDK_API_LEVEL="$(prop ro.llndk.api_level || true)"
 FIRST_API_LEVEL="$(prop ro.product.first_api_level || true)"
 
+SYSTEM_LAYOUT="not-checked"
+VINTF_METADATA="not-checked"
+if [ -n "$SYSTEM_ROOT" ] && [ -d "$SYSTEM_ROOT" ]; then
+  if [ -f "$SYSTEM_ROOT/init" ] && [ -d "$SYSTEM_ROOT/system" ]; then
+    SYSTEM_LAYOUT="system-as-root"
+  elif [ -f "$SYSTEM_ROOT/system/bin/init" ]; then
+    SYSTEM_LAYOUT="system-mounted"
+  elif [ -f "$SYSTEM_ROOT/bin/init" ]; then
+    SYSTEM_LAYOUT="legacy-root"
+  else
+    SYSTEM_LAYOUT="unknown"
+  fi
+  if find "$SYSTEM_ROOT" -type f -path '*/etc/vintf/*' -print -quit 2>/dev/null | grep -q .; then
+    VINTF_METADATA="present"
+  else
+    VINTF_METADATA="not-found"
+  fi
+fi
+
 STATUS=PASS
 FAILURES=()
 WARNINGS=()
@@ -57,6 +77,12 @@ fi
 if [ -z "$VNDK_VERSION" ] && [ -z "$VENDOR_API_LEVEL" ] && [ -z "$LLNDK_API_LEVEL" ]; then
   warn "No VNDK/vendor-API marker is visible in system metadata; target vendor-interface compatibility must be checked separately."
 fi
+if [[ "$SDK" =~ ^[0-9]+$ ]] && [ "$SDK" -ge 29 ] && [ -n "$SYSTEM_ROOT" ] && [ "$SYSTEM_LAYOUT" != system-as-root ]; then
+  warn "Android SDK $SDK image is not detected as system-as-root; verify the target's GSI mount layout before flashing."
+fi
+if [ "$VINTF_METADATA" = not-found ]; then
+  warn "No framework VINTF metadata was found in the extracted system tree."
+fi
 warn "This GSI does not contain a universal kernel, vendor HAL, DTB, boot chain, or vbmeta policy."
 warn "Target '$TARGET_MODEL' must provide matching Treble vendor/system_ext/product behavior."
 
@@ -76,6 +102,8 @@ mkdir -p "$(dirname "$REPORT")"
   echo "Vendor API level: ${VENDOR_API_LEVEL:-not-present}"
   echo "LL-NDK API level: ${LLNDK_API_LEVEL:-not-present}"
   echo "First API level: ${FIRST_API_LEVEL:-unknown}"
+  echo "System layout: $SYSTEM_LAYOUT"
+  echo "Framework VINTF metadata: $VINTF_METADATA"
   echo
   echo "Hard failures:"
   if [ "${#FAILURES[@]}" -eq 0 ]; then echo "- none"; else printf -- '- %s\n' "${FAILURES[@]}"; fi
