@@ -29,6 +29,10 @@ SDK="$(prop ro.build.version.sdk || true)"
 ANDROID="$(prop ro.build.version.release || true)"
 DEVICE="$(prop ro.product.system.device || true)"
 MODEL="$(prop ro.product.system.model || true)"
+VNDK_VERSION="$(prop ro.vndk.version || true)"
+VENDOR_API_LEVEL="$(prop ro.vendor.api_level || true)"
+LLNDK_API_LEVEL="$(prop ro.llndk.api_level || true)"
+FIRST_API_LEVEL="$(prop ro.product.first_api_level || true)"
 
 STATUS=PASS
 FAILURES=()
@@ -50,6 +54,9 @@ case "$TREBLE" in true|1) ;; *) fail "ro.treble.enabled is not true." ;; esac
 if [[ "$SDK" =~ ^[0-9]+$ ]] && [ "$SDK" -lt 29 ]; then
   fail "Android SDK $SDK predates the Android 10 Treble baseline."
 fi
+if [ -z "$VNDK_VERSION" ] && [ -z "$VENDOR_API_LEVEL" ] && [ -z "$LLNDK_API_LEVEL" ]; then
+  warn "No VNDK/vendor-API marker is visible in system metadata; target vendor-interface compatibility must be checked separately."
+fi
 warn "This GSI does not contain a universal kernel, vendor HAL, DTB, boot chain, or vbmeta policy."
 warn "Target '$TARGET_MODEL' must provide matching Treble vendor/system_ext/product behavior."
 
@@ -65,6 +72,10 @@ mkdir -p "$(dirname "$REPORT")"
   echo "Model marker: ${MODEL:-unknown}"
   echo "Android: ${ANDROID:-unknown} (SDK ${SDK:-unknown})"
   echo "Treble: ${TREBLE:-unknown}"
+  echo "VNDK version: ${VNDK_VERSION:-not-present}"
+  echo "Vendor API level: ${VENDOR_API_LEVEL:-not-present}"
+  echo "LL-NDK API level: ${LLNDK_API_LEVEL:-not-present}"
+  echo "First API level: ${FIRST_API_LEVEL:-unknown}"
   echo
   echo "Hard failures:"
   if [ "${#FAILURES[@]}" -eq 0 ]; then echo "- none"; else printf -- '- %s\n' "${FAILURES[@]}"; fi
