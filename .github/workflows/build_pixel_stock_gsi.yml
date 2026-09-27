@@ -205,7 +205,8 @@ jobs:
 
           ### Before flashing
 
-          This is an unofficial community GSI, not a Google-signed Pixel image.
+          This is an unofficial Pixel-derived, GSI-shaped system image, not an
+          AOSP-built universal GSI or a Google-signed Pixel image.
           Keep the target device's matching vendor, kernel/modules, DTB,
           boot/vendor_boot, vbmeta policy, product/system_ext behavior, and
           recovery procedure. The builder cannot make one system image boot on
