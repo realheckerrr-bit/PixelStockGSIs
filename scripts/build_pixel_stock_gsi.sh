@@ -36,7 +36,7 @@ bash "$SCRIPT_DIR/extract_system_root.sh" "$SOURCE_IMAGE" "$WORK_DIR" "$SYSTEM_R
 bash "$SCRIPT_DIR/patch_pixel_treble.sh" "$SYSTEM_ROOT"
 bash "$SCRIPT_DIR/build_gsi_image.sh" "$SYSTEM_ROOT" "$OUTPUT_NAME" "$FS_TYPE" "$WORK_DIR" "$OUTPUT_DIR"
 
-BUILD_PROP=$(find "$SYSTEM_ROOT" -maxdepth 4 -type f -name build.prop -print -quit)
+BUILD_PROP=$(cat "$WORK_DIR/build-prop.path")
 bash "$SCRIPT_DIR/check_gsi_compatibility.sh" \
   "$BUILD_PROP" "$TARGET_MODEL" "$OUTPUT_DIR/compatibility-report.txt" "$EXPECTED_ARCH"
 

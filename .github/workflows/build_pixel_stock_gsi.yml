@@ -89,7 +89,7 @@ jobs:
           test -n "$IMAGE_XZ" && test -n "$IMAGE_GZ"
           (cd "$OUTPUT_DIR" && sha256sum *.img.xz *.img.gz > SHA256SUMS.txt)
 
-          BUILD_PROP=$(find "$GITHUB_WORKSPACE/workspace/system-root" -maxdepth 4 -type f -name build.prop -print -quit)
+          BUILD_PROP=$(cat "$GITHUB_WORKSPACE/workspace/build-prop.path")
           prop() {
             local key="$1"
             awk -v wanted="$key" 'index($0, wanted "=") == 1 { sub(/^[^=]*=/, ""); print; exit }' "$BUILD_PROP"

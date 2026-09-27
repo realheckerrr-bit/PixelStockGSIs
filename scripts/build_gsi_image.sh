@@ -13,6 +13,12 @@ if [ -z "$SYSTEM_ROOT" ] || [ ! -d "$SYSTEM_ROOT" ] || [ -z "$WORK_DIR" ] || [ -
 fi
 case "$FS_TYPE" in ext4|erofs) ;; *) echo "[-] filesystem must be ext4 or erofs" >&2; exit 2 ;; esac
 
+if [ "$(id -u)" -eq 0 ] || ! command -v sudo >/dev/null 2>&1; then
+  SUDO=()
+else
+  SUDO=(sudo)
+fi
+
 OUTPUT_NAME=$(printf '%s' "$OUTPUT_NAME" | sed -E 's/[^A-Za-z0-9._-]+/_/g; s/^[.-]+//; s/[.-]+$//')
 [ -n "$OUTPUT_NAME" ] || OUTPUT_NAME=PixelStockGSI
 mkdir -p "$OUTPUT_DIR"
@@ -24,8 +30,8 @@ DSU_RAW="$WORK_DIR/${OUTPUT_NAME}.dsu.raw.img"
 
 if [ "$FS_TYPE" = "erofs" ]; then
   echo "==> [BUILD] Creating EROFS GSI"
-  mkfs.erofs -z lz4hc "$IMAGE" "$SYSTEM_ROOT" \
-    || { rm -f -- "$IMAGE"; mkfs.erofs -z lz4 "$IMAGE" "$SYSTEM_ROOT"; }
+  "${SUDO[@]}" mkfs.erofs -z lz4hc "$IMAGE" "$SYSTEM_ROOT" \
+    || { rm -f -- "$IMAGE"; "${SUDO[@]}" mkfs.erofs -z lz4 "$IMAGE" "$SYSTEM_ROOT"; }
 else
   DIR_SIZE=$(sudo du -sb "$SYSTEM_ROOT" | cut -f1)
   BUFFER=$((128 * 1024 * 1024))
@@ -36,13 +42,13 @@ else
   mke2fs -t ext4 -b 4096 -F -O ^has_journal -O ^dir_index -L system "$RAW_IMAGE" >/dev/null
   if command -v e2fsdroid >/dev/null 2>&1; then
     E2FSDROID_ARGS=(-e -f "$SYSTEM_ROOT" -a /system)
-    FILE_CONTEXTS=$(find "$SYSTEM_ROOT" -type f \( \
+    FILE_CONTEXTS=$("${SUDO[@]}" find "$SYSTEM_ROOT" -type f \( \
       -name file_contexts -o -name plat_file_contexts -o -name vendor_file_contexts \
     \) -print -quit 2>/dev/null || true)
     if [ -n "$FILE_CONTEXTS" ]; then
       E2FSDROID_ARGS+=(-S "$FILE_CONTEXTS")
     fi
-    e2fsdroid "${E2FSDROID_ARGS[@]}" "$RAW_IMAGE"
+    "${SUDO[@]}" e2fsdroid "${E2FSDROID_ARGS[@]}" "$RAW_IMAGE"
   else
     MOUNT_DIR="$WORK_DIR/repack.mount"
     mkdir -p "$MOUNT_DIR"
