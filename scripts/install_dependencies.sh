@@ -15,7 +15,7 @@ sudo apt-get install -y -qq --no-install-recommends \
   xz-utils
 
 # Full OTA packages contain payload.bin. Keep the helper version visible in
-# build-info.txt so a release can be reproduced or investigated later.
+# the GitHub Release metadata so a build can be reproduced or investigated later.
 if ! command -v payload-dumper-go >/dev/null 2>&1; then
   version=$(curl --fail --silent --show-error --location --retry 3 \
     https://api.github.com/repos/ssut/payload-dumper-go/releases/latest \
