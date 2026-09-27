@@ -42,6 +42,22 @@ The release tag follows the same style as the companion project:
 6. Download the assets from the created GitHub Release and verify
    `SHA256SUMS.txt` before using them.
 
+### Windows quick launcher
+
+Install and authenticate the [GitHub CLI](https://cli.github.com/), then run
+the PowerShell dispatcher from a cloned copy of this repository:
+
+```powershell
+.\scripts\Invoke-PixelStockGSI.ps1 `
+  -GoogleUrl "https://dl.google.com/example.zip" `
+  -Sha256 "<sha256-from-google>" `
+  -OutputName "PixelStockGSI" `
+  -Wait
+```
+
+For official-page resolution, omit `-GoogleUrl` and `-Sha256` and provide a
+Pixel codename instead, for example `-DeviceCodename bluejay`.
+
 The downloader accepts only known Google distribution hosts (`dl.google.com`,
 `storage.googleapis.com`, `android.googleapis.com`, and
 `ota.googlezip.net`). A random mirror, Google Drive link, or arbitrary URL is

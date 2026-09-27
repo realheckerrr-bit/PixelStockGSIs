@@ -21,3 +21,17 @@ jobs:
           bash tests/test_treble_patch.sh
           bash tests/test_compatibility.sh
           python3 tests/test_official_page_parser.py
+      - name: PowerShell launcher syntax
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path scripts/Invoke-PixelStockGSI.ps1),
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_ }
+            exit 1
+          }
