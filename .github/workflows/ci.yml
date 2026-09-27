@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  shell-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Syntax check
+        run: bash -n scripts/*.sh tests/*.sh
+      - name: Unit tests
+        run: |
+          chmod +x scripts/*.sh tests/*.sh
+          bash tests/test_url_validation.sh
+          bash tests/test_treble_patch.sh
+          bash tests/test_compatibility.sh

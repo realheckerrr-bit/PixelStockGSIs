@@ -1,0 +1,187 @@
+name: "Build PixelStockGSI"
+
+on:
+  workflow_dispatch:
+    inputs:
+      google_url:
+        description: "Direct HTTPS URL copied from Google's official Pixel factory/OTA page"
+        required: true
+        type: string
+      sha256:
+        description: "Official SHA-256 for the downloaded Google package"
+        required: true
+        type: string
+      output_name:
+        description: "Release image base name"
+        required: true
+        default: "PixelStockGSI"
+        type: string
+      filesystem:
+        description: "Output filesystem"
+        required: true
+        default: "ext4"
+        type: choice
+        options:
+          - ext4
+          - erofs
+      target_model:
+        description: "Optional device being evaluated; use generic for a cross-device build"
+        required: true
+        default: "generic"
+        type: string
+      expected_arch:
+        description: "ABI gate for the generated GSI"
+        required: true
+        default: "arm64"
+        type: choice
+        options:
+          - arm64
+          - auto
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: "PixelStockGSI build"
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install image tools
+        run: bash scripts/install_dependencies.sh
+
+      - name: Build and patch Pixel stock system image
+        env:
+          GOOGLE_URL: ${{ inputs.google_url }}
+          GOOGLE_SHA256: ${{ inputs.sha256 }}
+          OUTPUT_NAME: ${{ inputs.output_name }}
+          FILESYSTEM: ${{ inputs.filesystem }}
+          TARGET_MODEL: ${{ inputs.target_model }}
+          EXPECTED_ARCH: ${{ inputs.expected_arch }}
+        run: |
+          chmod +x scripts/*.sh
+          bash scripts/build_pixel_stock_gsi.sh \
+            "$GOOGLE_URL" \
+            "$OUTPUT_NAME" \
+            "$FILESYSTEM" \
+            "$GITHUB_WORKSPACE/workspace" \
+            "$GOOGLE_SHA256" \
+            "$TARGET_MODEL" \
+            "$EXPECTED_ARCH"
+
+      - name: Create checksums and release metadata
+        id: metadata
+        env:
+          GOOGLE_URL: ${{ inputs.google_url }}
+          GOOGLE_SHA256: ${{ inputs.sha256 }}
+          OUTPUT_NAME: ${{ inputs.output_name }}
+          FILESYSTEM: ${{ inputs.filesystem }}
+          TARGET_MODEL: ${{ inputs.target_model }}
+          EXPECTED_ARCH: ${{ inputs.expected_arch }}
+        run: |
+          set -Eeuo pipefail
+          OUTPUT_DIR="$GITHUB_WORKSPACE/workspace/output"
+          IMAGE_XZ=$(find "$OUTPUT_DIR" -maxdepth 1 -type f -name '*.img.xz' -print -quit)
+          IMAGE_GZ=$(find "$OUTPUT_DIR" -maxdepth 1 -type f -name '*.img.gz' -print -quit)
+          test -n "$IMAGE_XZ" && test -n "$IMAGE_GZ"
+          (cd "$OUTPUT_DIR" && sha256sum *.img.xz *.img.gz > SHA256SUMS.txt)
+
+          BUILD_PROP=$(find "$GITHUB_WORKSPACE/workspace/system-root" -maxdepth 4 -type f -name build.prop -print -quit)
+          prop() {
+            local key="$1"
+            awk -v wanted="$key" 'index($0, wanted "=") == 1 { sub(/^[^=]*=/, ""); print; exit }' "$BUILD_PROP"
+          }
+          RAW_BYTES=$(xz --robot --list "$IMAGE_XZ" | awk -F '\t' '$1 == "totals" { print $5 }')
+          [ -n "$RAW_BYTES" ] || RAW_BYTES=0
+          RELEASE_TAG="v$(date -u +%Y.%m.%d-%H%M%S)-${GITHUB_RUN_ID}"
+          RELEASE_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$RELEASE_TAG"
+
+          cat > "$OUTPUT_DIR/build-info.txt" <<EOF
+          PixelStockGSI's build report
+          ===========================
+          Tool version: $(cat VERSION)
+          Source URL: $GOOGLE_URL
+          Source package SHA-256: $GOOGLE_SHA256
+          Extracted source system SHA-256: $(cat "$GITHUB_WORKSPACE/workspace/source-system.sha256")
+          Source filesystem: $(cat "$GITHUB_WORKSPACE/workspace/source-filesystem.txt")
+          Output filesystem: $FILESYSTEM
+          Output image size before compression: $RAW_BYTES bytes
+          Target model hint: $TARGET_MODEL
+          Requested ABI: $EXPECTED_ARCH
+          Device marker: $(prop ro.product.system.device)
+          Pixel model marker: $(prop ro.product.system.model)
+          Android version: $(prop ro.build.version.release) (SDK $(prop ro.build.version.sdk))
+          Build ID: $(prop ro.build.id)
+          Build fingerprint: $(prop ro.build.fingerprint)
+          Security patch: $(prop ro.build.version.security_patch)
+          Image mode: $(cat "$GITHUB_WORKSPACE/workspace/image-mode.txt")
+          Commit: $GITHUB_SHA
+          Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          Release: $RELEASE_URL
+
+          Checksums:
+          $(cat "$OUTPUT_DIR/SHA256SUMS.txt")
+          EOF
+
+          cat > "$OUTPUT_DIR/release-notes.md" <<EOF
+          ## PixelStockGSI's
+
+          This release was built from the official Google Pixel package URL
+          supplied to the workflow and verified with the SHA-256 recorded below.
+
+          - Source URL: $GOOGLE_URL
+          - Source package SHA-256: `$GOOGLE_SHA256`
+          - Output filesystem: `$FILESYSTEM`
+          - Target model hint: `$TARGET_MODEL`
+          - ABI gate: `$EXPECTED_ARCH`
+          - Workflow run: [$GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)
+
+          ### Assets
+
+          - `.img.xz`: sparse system image for the device-specific GSI flashing method.
+          - `.img.gz`: raw system image compressed for supported DSU sideloaders.
+          - `compatibility-report.txt`: automated gate plus device-specific warnings.
+          - `build-info.txt` and `SHA256SUMS.txt`: provenance and verification.
+
+          ### Before flashing
+
+          This is an unofficial community GSI, not a Google-signed Pixel image.
+          Keep the target device's matching vendor, kernel/modules, DTB,
+          boot/vendor_boot, vbmeta policy, product/system_ext behavior, and
+          recovery procedure. The builder cannot make one system image boot on
+          every device or supply hardware drivers. An unlocked, Treble-capable
+          device and a device-specific installation method are required.
+          EOF
+
+          echo "RELEASE_TAG=$RELEASE_TAG" >> "$GITHUB_ENV"
+          echo "OUTPUT_DIR=$OUTPUT_DIR" >> "$GITHUB_ENV"
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: "${{ inputs.output_name }}-PixelStockGSI"
+          path: |
+            workspace/output/*.img.xz
+            workspace/output/*.img.gz
+            workspace/output/SHA256SUMS.txt
+            workspace/output/build-info.txt
+            workspace/output/compatibility-report.txt
+          retention-days: 14
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: "PixelStockGSI's - ${{ inputs.output_name }}"
+          body_path: workspace/output/release-notes.md
+          files: |
+            workspace/output/*.img.xz
+            workspace/output/*.img.gz
+            workspace/output/SHA256SUMS.txt
+            workspace/output/build-info.txt
+            workspace/output/compatibility-report.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

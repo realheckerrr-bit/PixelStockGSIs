@@ -1,0 +1,9 @@
+workspace/
+*.img
+*.img.xz
+*.img.gz
+*.zip
+*.tgz
+*.tar
+*.tar.gz
+*.log
