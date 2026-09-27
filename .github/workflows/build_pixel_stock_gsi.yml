@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       google_url:
-        description: "Optional direct HTTPS URL copied from Google's official Pixel page"
+        description: "Optional direct HTTPS URL for a Google Pixel package or official GSI ZIP"
         required: false
         default: ""
         type: string
       sha256:
-        description: "Optional SHA-256 matching the direct URL"
+        description: "Optional SHA-256 matching the direct Google URL"
         required: false
         default: ""
         type: string
@@ -23,6 +23,14 @@ on:
         required: false
         default: ""
         type: string
+      source_mode:
+        description: "Use a Pixel stock system image or Google's official GSI as the base"
+        required: true
+        default: "pixel_stock"
+        type: choice
+        options:
+          - pixel_stock
+          - official_gsi
       output_name:
         description: "Release image base name"
         required: true
@@ -68,9 +76,15 @@ jobs:
           GOOGLE_SHA256_INPUT: ${{ inputs.sha256 }}
           GOOGLE_PAGE_URL: ${{ inputs.google_page_url }}
           DEVICE_CODENAME: ${{ inputs.device_codename }}
+          SOURCE_MODE: ${{ inputs.source_mode }}
         run: |
           set -Eeuo pipefail
-          if [ -n "$GOOGLE_URL_INPUT" ] || [ -n "$GOOGLE_SHA256_INPUT" ]; then
+          if [ "$SOURCE_MODE" = official_gsi ]; then
+            test -n "$GOOGLE_URL_INPUT" || { echo "official_gsi requires a direct google_url and sha256" >&2; exit 2; }
+            test -n "$GOOGLE_SHA256_INPUT" || { echo "official_gsi requires a direct google_url and sha256" >&2; exit 2; }
+            GOOGLE_URL_RESOLVED="$GOOGLE_URL_INPUT"
+            GOOGLE_SHA256_RESOLVED="$GOOGLE_SHA256_INPUT"
+          elif [ -n "$GOOGLE_URL_INPUT" ] || [ -n "$GOOGLE_SHA256_INPUT" ]; then
             test -n "$GOOGLE_URL_INPUT" || { echo "google_url and sha256 must be supplied together" >&2; exit 2; }
             test -n "$GOOGLE_SHA256_INPUT" || { echo "google_url and sha256 must be supplied together" >&2; exit 2; }
             GOOGLE_URL_RESOLVED="$GOOGLE_URL_INPUT"
@@ -84,12 +98,13 @@ jobs:
           fi
           echo "GOOGLE_URL=$GOOGLE_URL_RESOLVED" >> "$GITHUB_ENV"
           echo "GOOGLE_SHA256=$GOOGLE_SHA256_RESOLVED" >> "$GITHUB_ENV"
+          echo "SOURCE_MODE=$SOURCE_MODE" >> "$GITHUB_ENV"
           echo "Resolved official package: $(basename "$GOOGLE_URL_RESOLVED")"
 
       - name: Install image tools
         run: bash scripts/install_dependencies.sh
 
-      - name: Build and patch Pixel stock system image
+      - name: Build and patch selected Google system image
         env:
           OUTPUT_NAME: ${{ inputs.output_name }}
           FILESYSTEM: ${{ inputs.filesystem }}
@@ -113,6 +128,7 @@ jobs:
           FILESYSTEM: ${{ inputs.filesystem }}
           TARGET_MODEL: ${{ inputs.target_model }}
           EXPECTED_ARCH: ${{ inputs.expected_arch }}
+          SOURCE_MODE: ${{ inputs.source_mode }}
         run: |
           set -Eeuo pipefail
           OUTPUT_DIR="$GITHUB_WORKSPACE/workspace/output"
@@ -133,6 +149,7 @@ jobs:
           TOOL_VERSION=$(cat VERSION)
           SOURCE_SYSTEM_SHA=$(cat "$GITHUB_WORKSPACE/workspace/source-system.sha256")
           SOURCE_FILESYSTEM=$(cat "$GITHUB_WORKSPACE/workspace/source-filesystem.txt")
+          SOURCE_MODE_VALUE="${SOURCE_MODE:-pixel_stock}"
           DEVICE_MARKER=$(prop ro.product.system.device)
           PIXEL_MODEL=$(prop ro.product.system.model)
           ANDROID_VERSION=$(prop ro.build.version.release)
@@ -147,11 +164,12 @@ jobs:
           cat > "$OUTPUT_DIR/release-notes.md" <<EOF
           ## PixelStockGSI's
 
-          This release was built from the official Google Pixel package URL
-          supplied to the workflow and verified with the SHA-256 recorded below.
+          This release was built from the official Google package URL supplied
+          to the workflow and verified with the SHA-256 recorded below.
 
           - Source URL: $GOOGLE_URL
           - Source package SHA-256: \`$GOOGLE_SHA256\`
+          - Source mode: \`$SOURCE_MODE_VALUE\`
           - Output filesystem: \`$FILESYSTEM\`
           - Target model hint: \`$TARGET_MODEL\`
           - ABI gate: \`$EXPECTED_ARCH\`

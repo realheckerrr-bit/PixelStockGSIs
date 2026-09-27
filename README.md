@@ -1,9 +1,9 @@
 # PixelStockGSI's
 
 PixelStockGSI's is a GitHub Actions tool that downloads an official Google
-Pixel factory image or full OTA package, extracts its `system.img`, applies a
-small Project Treble/GSI compatibility patch, rebuilds the system image, and
-publishes release assets.
+Pixel factory/OTA image or an official Google GSI ZIP, extracts its
+`system.img`, applies a small Project Treble/GSI compatibility patch, rebuilds
+the system image, and publishes release assets.
 
 The GitHub repository uses the slug `PixelStockGSIs` because apostrophes are
 not a useful repository-name character. The project and release branding is
@@ -17,6 +17,8 @@ Each successful workflow run publishes:
 - `*.img.gz`: raw system image compressed in the format commonly accepted by
   DSU sideloaders;
 - `SHA256SUMS.txt`;
+- a source-mode record identifying whether the build used a Pixel stock image
+  or Google's official GSI image as its base;
 - complete build information embedded in the GitHub Release notes, including
   the exact Google URL, source SHA-256, Pixel build properties, and GitHub
   run/commit;
@@ -38,9 +40,14 @@ The release tag follows the same style as the companion project:
 4. When using page resolution, enter the row codename (`bluejay`, `panther`,
    `shiba`, etc.). The resolver extracts only the matching Google URL and the
    SHA-256 printed in that official row.
-5. Choose `ext4` for the broadest compatibility, or `erofs` for a smaller
+5. Leave **Source mode** as `pixel_stock` for the requested Pixel-derived
+   build. For the strongest cross-device GSI baseline, choose `official_gsi`
+   and provide the direct Google GSI ZIP URL plus its SHA-256; that mode uses
+   Google's already-generic GSI layout instead of converting a Pixel partition
+   into one.
+6. Choose `ext4` for the broadest compatibility, or `erofs` for a smaller
    read-only image.
-6. Download the assets from the created GitHub Release and verify
+7. Download the assets from the created GitHub Release and verify
    `SHA256SUMS.txt` before using them.
 
 ### Windows quick launcher
@@ -55,8 +62,10 @@ the PowerShell dispatcher from a cloned copy of this repository:
   -Wait
 ```
 
-For official-page resolution, omit `-GoogleUrl` and `-Sha256` and provide a
-Pixel codename instead, for example `-DeviceCodename bluejay`.
+For Pixel official-page resolution, omit `-GoogleUrl` and `-Sha256` and
+provide a Pixel codename instead, for example `-DeviceCodename bluejay`.
+For the official GSI base, pass `-SourceMode official_gsi` together with a
+direct Google GSI ZIP URL and its `-Sha256`.
 
 The downloader accepts only known Google distribution hosts (`dl.google.com`,
 `storage.googleapis.com`, `android.googleapis.com`, and

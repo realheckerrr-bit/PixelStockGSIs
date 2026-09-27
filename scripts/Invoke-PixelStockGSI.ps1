@@ -5,6 +5,8 @@ param(
     [string]$Sha256 = '',
     [string]$GooglePageUrl = 'https://developer.android.com/about/versions/17/qpr2/download',
     [string]$DeviceCodename = '',
+    [ValidateSet('pixel_stock', 'official_gsi')]
+    [string]$SourceMode = 'pixel_stock',
     [string]$OutputName = 'PixelStockGSI',
     [ValidateSet('ext4', 'erofs')]
     [string]$Filesystem = 'ext4',
@@ -26,7 +28,14 @@ if (($GoogleUrl -and -not $Sha256) -or (-not $GoogleUrl -and $Sha256)) {
 }
 
 if (-not $GoogleUrl -and -not $DeviceCodename) {
+    if ($SourceMode -eq 'official_gsi') {
+        throw 'official_gsi requires GoogleUrl/Sha256 for a direct Google GSI ZIP.'
+    }
     throw 'Provide either GoogleUrl/Sha256 or DeviceCodename for official-page resolution.'
+}
+
+if ($SourceMode -eq 'official_gsi' -and -not $GoogleUrl) {
+    throw 'official_gsi requires GoogleUrl/Sha256 for a direct Google GSI ZIP.'
 }
 
 if ($Sha256 -and $Sha256 -notmatch '^[0-9a-fA-F]{64}$') {
@@ -39,6 +48,7 @@ $fields = @(
     "sha256=$Sha256"
     "google_page_url=$GooglePageUrl"
     "device_codename=$DeviceCodename"
+    "source_mode=$SourceMode"
     "output_name=$OutputName"
     "filesystem=$Filesystem"
     "target_model=$TargetModel"
