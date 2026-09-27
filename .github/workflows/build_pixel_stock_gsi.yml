@@ -130,33 +130,18 @@ jobs:
           [ -n "$RAW_BYTES" ] || RAW_BYTES=0
           RELEASE_TAG="v$(date -u +%Y.%m.%d-%H%M%S)-${GITHUB_RUN_ID}"
           RELEASE_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/tag/$RELEASE_TAG"
-
-          cat > "$OUTPUT_DIR/build-info.txt" <<EOF
-          PixelStockGSI's build report
-          ===========================
-          Tool version: $(cat VERSION)
-          Source URL: $GOOGLE_URL
-          Source package SHA-256: $GOOGLE_SHA256
-          Extracted source system SHA-256: $(cat "$GITHUB_WORKSPACE/workspace/source-system.sha256")
-          Source filesystem: $(cat "$GITHUB_WORKSPACE/workspace/source-filesystem.txt")
-          Output filesystem: $FILESYSTEM
-          Output image size before compression: $RAW_BYTES bytes
-          Target model hint: $TARGET_MODEL
-          Requested ABI: $EXPECTED_ARCH
-          Device marker: $(prop ro.product.system.device)
-          Pixel model marker: $(prop ro.product.system.model)
-          Android version: $(prop ro.build.version.release) (SDK $(prop ro.build.version.sdk))
-          Build ID: $(prop ro.build.id)
-          Build fingerprint: $(prop ro.build.fingerprint)
-          Security patch: $(prop ro.build.version.security_patch)
-          Image mode: $(cat "$GITHUB_WORKSPACE/workspace/image-mode.txt")
-          Commit: $GITHUB_SHA
-          Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
-          Release: $RELEASE_URL
-
-          Checksums:
-          $(cat "$OUTPUT_DIR/SHA256SUMS.txt")
-          EOF
+          TOOL_VERSION=$(cat VERSION)
+          SOURCE_SYSTEM_SHA=$(cat "$GITHUB_WORKSPACE/workspace/source-system.sha256")
+          SOURCE_FILESYSTEM=$(cat "$GITHUB_WORKSPACE/workspace/source-filesystem.txt")
+          DEVICE_MARKER=$(prop ro.product.system.device)
+          PIXEL_MODEL=$(prop ro.product.system.model)
+          ANDROID_VERSION=$(prop ro.build.version.release)
+          ANDROID_SDK=$(prop ro.build.version.sdk)
+          BUILD_ID=$(prop ro.build.id)
+          BUILD_FINGERPRINT=$(prop ro.build.fingerprint)
+          SECURITY_PATCH=$(prop ro.build.version.security_patch)
+          IMAGE_MODE=$(cat "$GITHUB_WORKSPACE/workspace/image-mode.txt")
+          CHECKSUMS=$(cat "$OUTPUT_DIR/SHA256SUMS.txt")
 
           cat > "$OUTPUT_DIR/release-notes.md" <<EOF
           ## PixelStockGSI's
@@ -171,12 +156,42 @@ jobs:
           - ABI gate: \`$EXPECTED_ARCH\`
           - Workflow run: [$GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)
 
+          ### Build information
+
+          <details>
+          <summary>Show complete build metadata</summary>
+
+          - Tool version: \`$TOOL_VERSION\`
+          - Source package SHA-256: \`$GOOGLE_SHA256\`
+          - Extracted source system SHA-256: \`$SOURCE_SYSTEM_SHA\`
+          - Source filesystem: \`$SOURCE_FILESYSTEM\`
+          - Output filesystem: \`$FILESYSTEM\`
+          - Output image size before compression: \`$RAW_BYTES bytes\`
+          - Target model hint: \`$TARGET_MODEL\`
+          - Requested ABI: \`$EXPECTED_ARCH\`
+          - Device marker: \`$DEVICE_MARKER\`
+          - Pixel model marker: \`$PIXEL_MODEL\`
+          - Android version: \`$ANDROID_VERSION\` (SDK \`$ANDROID_SDK\`)
+          - Build ID: \`$BUILD_ID\`
+          - Build fingerprint: \`$BUILD_FINGERPRINT\`
+          - Security patch: \`$SECURITY_PATCH\`
+          - Image mode: \`$IMAGE_MODE\`
+          - Commit: \`$GITHUB_SHA\`
+          - Workflow run: [$GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)
+          - Release: [$RELEASE_TAG]($RELEASE_URL)
+
+          Checksums:
+
+          <pre>$CHECKSUMS</pre>
+
+          </details>
+
           ### Assets
 
           - \`.img.xz\`: sparse system image for the device-specific GSI flashing method.
           - \`.img.gz\`: raw system image compressed for supported DSU sideloaders.
           - \`compatibility-report.txt\`: automated gate plus device-specific warnings.
-          - \`build-info.txt\` and \`SHA256SUMS.txt\`: provenance and verification.
+          - \`SHA256SUMS.txt\`: download verification checksums.
 
           ### Before flashing
 
@@ -199,7 +214,6 @@ jobs:
             workspace/output/*.img.xz
             workspace/output/*.img.gz
             workspace/output/SHA256SUMS.txt
-            workspace/output/build-info.txt
             workspace/output/compatibility-report.txt
           retention-days: 14
 
@@ -213,7 +227,6 @@ jobs:
             workspace/output/*.img.xz
             workspace/output/*.img.gz
             workspace/output/SHA256SUMS.txt
-            workspace/output/build-info.txt
             workspace/output/compatibility-report.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

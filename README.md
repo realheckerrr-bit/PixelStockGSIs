@@ -17,8 +17,9 @@ Each successful workflow run publishes:
 - `*.img.gz`: raw system image compressed in the format commonly accepted by
   DSU sideloaders;
 - `SHA256SUMS.txt`;
-- `build-info.txt`, including the exact Google URL, source SHA-256, Pixel
-  build properties, and GitHub run/commit;
+- complete build information embedded in the GitHub Release notes, including
+  the exact Google URL, source SHA-256, Pixel build properties, and GitHub
+  run/commit;
 - `compatibility-report.txt`.
 
 The release tag follows the same style as the companion project:
