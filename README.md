@@ -49,8 +49,7 @@ the PowerShell dispatcher from a cloned copy of this repository:
 
 ```powershell
 .\scripts\Invoke-PixelStockGSI.ps1 `
-  -GoogleUrl "https://dl.google.com/example.zip" `
-  -Sha256 "<sha256-from-google>" `
+  -DeviceCodename bluejay `
   -OutputName "PixelStockGSI" `
   -Wait
 ```
