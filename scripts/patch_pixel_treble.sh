@@ -56,14 +56,14 @@ fi
 
 # This marker is additive and does not pretend that a Pixel kernel or vendor
 # HAL is universal. It is useful for bug reports and recovery diagnostics.
-"${SUDO[@]}" mkdir -p "$SYSTEM_ROOT/etc"
-"${SUDO[@]}" tee "$SYSTEM_ROOT/etc/pixelstockgsi.properties" >/dev/null <<EOF
+MARKER_PATH="$SYSTEM_ROOT/pixelstockgsi.properties"
+"${SUDO[@]}" tee "$MARKER_PATH" >/dev/null <<EOF
 tool=PixelStockGSI's
 release_type=unofficial
 treble_patch=true
 source_build_prop=$(basename "$BUILD_PROP")
 EOF
-"${SUDO[@]}" chmod 644 "$SYSTEM_ROOT/etc/pixelstockgsi.properties"
+"${SUDO[@]}" chmod 644 "$MARKER_PATH"
 
 printf '%s\n' "$BUILD_PROP" > "$(dirname "$SYSTEM_ROOT")/build-prop.path"
 echo "==> [PATCH] Treble properties written to $BUILD_PROP"

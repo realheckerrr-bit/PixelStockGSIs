@@ -19,6 +19,6 @@ grep -Fx 'ro.treble.enabled=true' "$TEST_DIR/system/build.prop" >/dev/null
 grep -Fx 'ro.apex.updatable=false' "$TEST_DIR/system/build.prop" >/dev/null
 grep -Fx 'ro.product.system.device=generic' "$TEST_DIR/system/build.prop" >/dev/null
 grep -F "via PixelStockGSI's" "$TEST_DIR/system/build.prop" >/dev/null
-grep -Fx "tool=PixelStockGSI's" "$TEST_DIR/system/etc/pixelstockgsi.properties" >/dev/null
+grep -Fx "tool=PixelStockGSI's" "$TEST_DIR/system/pixelstockgsi.properties" >/dev/null
 
 echo "==> Treble patch tests passed."
