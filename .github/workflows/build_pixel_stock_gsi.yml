@@ -142,6 +142,7 @@ jobs:
           SECURITY_PATCH=$(prop ro.build.version.security_patch)
           IMAGE_MODE=$(cat "$GITHUB_WORKSPACE/workspace/image-mode.txt")
           CHECKSUMS=$(cat "$OUTPUT_DIR/SHA256SUMS.txt")
+          COMPATIBILITY_REPORT=$(cat "$OUTPUT_DIR/compatibility-report.txt")
 
           cat > "$OUTPUT_DIR/release-notes.md" <<EOF
           ## PixelStockGSI's
@@ -183,6 +184,15 @@ jobs:
           Checksums:
 
           <pre>$CHECKSUMS</pre>
+
+          </details>
+
+          ### Compatibility preflight
+
+          <details>
+          <summary>Show automated compatibility report</summary>
+
+          <pre>$COMPATIBILITY_REPORT</pre>
 
           </details>
 

@@ -20,7 +20,8 @@ Each successful workflow run publishes:
 - complete build information embedded in the GitHub Release notes, including
   the exact Google URL, source SHA-256, Pixel build properties, and GitHub
   run/commit;
-- `compatibility-report.txt`.
+- the complete compatibility preflight report embedded in the GitHub Release
+  notes and attached as `compatibility-report.txt`.
 
 The release tag follows the same style as the companion project:
 `vYYYY.MM.DD-HHMMSS-RUN_ID`.
@@ -64,12 +65,18 @@ rejected so the provenance claim remains meaningful.
 
 ## Important compatibility limits
 
-This project makes a Pixel `system.img` into a Treble-shaped GSI; it cannot
-make one Android image boot literally every phone. The target still supplies
+This project makes a Pixel `system.img` into a best-effort Treble/GSI-shaped
+system image; it is not an AOSP-built universal GSI and cannot make one
+Android image boot literally every phone. The target still supplies
 the matching vendor implementation, kernel/modules, DTB, boot/vendor_boot,
 vbmeta policy, partition layout, and recovery/flash method. The bootloader
 must be unlockable and the device must support Project Treble/GSI installation
 (normally Android 9+ with an unlocked bootloader).
+
+Read the release body's **Compatibility preflight** section before flashing.
+In particular, `System layout` and `Framework VINTF metadata` expose whether
+the extracted Pixel system has the layout and metadata expected by a target;
+warnings are not a universal boot guarantee.
 
 The workflow fails on unsupported CPU ABI metadata and refuses to publish a
 release when the source does not look like an Android system image. It emits
