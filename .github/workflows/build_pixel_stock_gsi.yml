@@ -4,12 +4,24 @@ on:
   workflow_dispatch:
     inputs:
       google_url:
-        description: "Direct HTTPS URL copied from Google's official Pixel factory/OTA page"
-        required: true
+        description: "Optional direct HTTPS URL copied from Google's official Pixel page"
+        required: false
+        default: ""
         type: string
       sha256:
-        description: "Official SHA-256 for the downloaded Google package"
-        required: true
+        description: "Optional SHA-256 matching the direct URL"
+        required: false
+        default: ""
+        type: string
+      google_page_url:
+        description: "Official Android download page used when direct URL/SHA are blank"
+        required: false
+        default: "https://developer.android.com/about/versions/17/qpr2/download"
+        type: string
+      device_codename:
+        description: "Pixel codename on that page, for example bluejay, panther, or shiba"
+        required: false
+        default: ""
         type: string
       output_name:
         description: "Release image base name"
@@ -50,13 +62,35 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Resolve official Google package
+        env:
+          GOOGLE_URL_INPUT: ${{ inputs.google_url }}
+          GOOGLE_SHA256_INPUT: ${{ inputs.sha256 }}
+          GOOGLE_PAGE_URL: ${{ inputs.google_page_url }}
+          DEVICE_CODENAME: ${{ inputs.device_codename }}
+        run: |
+          set -Eeuo pipefail
+          if [ -n "$GOOGLE_URL_INPUT" ] || [ -n "$GOOGLE_SHA256_INPUT" ]; then
+            test -n "$GOOGLE_URL_INPUT" || { echo "google_url and sha256 must be supplied together" >&2; exit 2; }
+            test -n "$GOOGLE_SHA256_INPUT" || { echo "google_url and sha256 must be supplied together" >&2; exit 2; }
+            GOOGLE_URL_RESOLVED="$GOOGLE_URL_INPUT"
+            GOOGLE_SHA256_RESOLVED="$GOOGLE_SHA256_INPUT"
+          else
+            test -n "$DEVICE_CODENAME" || { echo "Provide device_codename when direct URL/SHA are blank" >&2; exit 2; }
+            mapfile -t RESOLVED < <(python3 scripts/resolve_official_pixel_image.py "$GOOGLE_PAGE_URL" "$DEVICE_CODENAME")
+            test "${#RESOLVED[@]}" -eq 2 || { echo "Official page resolver returned an invalid result" >&2; exit 1; }
+            GOOGLE_URL_RESOLVED="${RESOLVED[0]}"
+            GOOGLE_SHA256_RESOLVED="${RESOLVED[1]}"
+          fi
+          echo "GOOGLE_URL=$GOOGLE_URL_RESOLVED" >> "$GITHUB_ENV"
+          echo "GOOGLE_SHA256=$GOOGLE_SHA256_RESOLVED" >> "$GITHUB_ENV"
+          echo "Resolved official package: $(basename "$GOOGLE_URL_RESOLVED")"
+
       - name: Install image tools
         run: bash scripts/install_dependencies.sh
 
       - name: Build and patch Pixel stock system image
         env:
-          GOOGLE_URL: ${{ inputs.google_url }}
-          GOOGLE_SHA256: ${{ inputs.sha256 }}
           OUTPUT_NAME: ${{ inputs.output_name }}
           FILESYSTEM: ${{ inputs.filesystem }}
           TARGET_MODEL: ${{ inputs.target_model }}
@@ -75,8 +109,6 @@ jobs:
       - name: Create checksums and release metadata
         id: metadata
         env:
-          GOOGLE_URL: ${{ inputs.google_url }}
-          GOOGLE_SHA256: ${{ inputs.sha256 }}
           OUTPUT_NAME: ${{ inputs.output_name }}
           FILESYSTEM: ${{ inputs.filesystem }}
           TARGET_MODEL: ${{ inputs.target_model }}

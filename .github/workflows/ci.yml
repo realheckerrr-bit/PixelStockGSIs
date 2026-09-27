@@ -20,3 +20,4 @@ jobs:
           bash tests/test_url_validation.sh
           bash tests/test_treble_patch.sh
           bash tests/test_compatibility.sh
+          python3 tests/test_official_page_parser.py

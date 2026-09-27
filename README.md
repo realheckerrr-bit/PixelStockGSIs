@@ -28,12 +28,14 @@ The release tag follows the same style as the companion project:
 
 1. Create or open the `PixelStockGSIs` repository.
 2. Open **Actions → Build PixelStockGSI** and choose **Run workflow**.
-3. Paste a direct HTTPS URL copied from Google's official Pixel factory-image
-   or full-OTA page:
+3. Either paste a direct HTTPS URL and its SHA-256, or enter an official
+   Android download page plus a Pixel codename such as `bluejay`:
    - factory images: <https://developers.google.com/android/images>
    - full OTA images: <https://developers.google.com/android/ota>
-4. Enter the exact SHA-256 shown by Google when it is available. The workflow
-   requires it for the build to continue.
+   - Android 17 QPR2 example page: <https://developer.android.com/about/versions/17/qpr2/download>
+4. When using page resolution, enter the row codename (`bluejay`, `panther`,
+   `shiba`, etc.). The resolver extracts only the matching Google URL and the
+   SHA-256 printed in that official row.
 5. Choose `ext4` for the broadest compatibility, or `erofs` for a smaller
    read-only image.
 6. Download the assets from the created GitHub Release and verify
