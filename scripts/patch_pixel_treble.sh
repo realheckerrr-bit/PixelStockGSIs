@@ -13,7 +13,25 @@ else
   SUDO=(sudo)
 fi
 
-BUILD_PROP=$("${SUDO[@]}" find "$SYSTEM_ROOT" -maxdepth 4 -type f -name build.prop -print -quit)
+BUILD_PROP=""
+for candidate in \
+  "$SYSTEM_ROOT/system/etc/build.prop" \
+  "$SYSTEM_ROOT/system/build.prop" \
+  "$SYSTEM_ROOT/etc/build.prop" \
+  "$SYSTEM_ROOT/build.prop"; do
+  if [ -f "$candidate" ]; then
+    BUILD_PROP="$candidate"
+    break
+  fi
+done
+if [ -z "$BUILD_PROP" ]; then
+  BUILD_PROP=$("${SUDO[@]}" find "$SYSTEM_ROOT" \
+    -path '*/system_dlkm' -prune -o \
+    -path '*/vendor' -prune -o \
+    -path '*/product' -prune -o \
+    -path '*/system_ext' -prune -o \
+    -type f -name build.prop -print -quit)
+fi
 if [ -z "$BUILD_PROP" ]; then
   echo "[-] Pixel system tree has no build.prop." >&2
   exit 1
