@@ -133,18 +133,18 @@ jobs:
           supplied to the workflow and verified with the SHA-256 recorded below.
 
           - Source URL: $GOOGLE_URL
-          - Source package SHA-256: `$GOOGLE_SHA256`
-          - Output filesystem: `$FILESYSTEM`
-          - Target model hint: `$TARGET_MODEL`
-          - ABI gate: `$EXPECTED_ARCH`
+          - Source package SHA-256: \`$GOOGLE_SHA256\`
+          - Output filesystem: \`$FILESYSTEM\`
+          - Target model hint: \`$TARGET_MODEL\`
+          - ABI gate: \`$EXPECTED_ARCH\`
           - Workflow run: [$GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)
 
           ### Assets
 
-          - `.img.xz`: sparse system image for the device-specific GSI flashing method.
-          - `.img.gz`: raw system image compressed for supported DSU sideloaders.
-          - `compatibility-report.txt`: automated gate plus device-specific warnings.
-          - `build-info.txt` and `SHA256SUMS.txt`: provenance and verification.
+          - \`.img.xz\`: sparse system image for the device-specific GSI flashing method.
+          - \`.img.gz\`: raw system image compressed for supported DSU sideloaders.
+          - \`compatibility-report.txt\`: automated gate plus device-specific warnings.
+          - \`build-info.txt\` and \`SHA256SUMS.txt\`: provenance and verification.
 
           ### Before flashing
 
