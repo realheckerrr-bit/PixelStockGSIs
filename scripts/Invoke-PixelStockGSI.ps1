@@ -58,7 +58,8 @@ if ($TargetAdbSerial) {
         'ro.product.system.model', 'ro.product.cpu.abilist',
         'ro.product.system.cpu.abilist', 'ro.product.cpu.abilist64',
         'ro.product.system.cpu.abilist64', 'ro.treble.enabled',
-        'ro.build.version.sdk', 'ro.vndk.version', 'ro.vendor.api_level'
+        'ro.build.version.release', 'ro.build.version.sdk', 'ro.vndk.version',
+        'ro.vendor.api_level'
     )
     $targetLines = foreach ($line in $adbOutput) {
         if ($line -match '^\[(?<key>[^\]]+)\]: \[(?<value>.*)\]$' -and $allowedTargetKeys -contains $Matches.key) {

@@ -54,6 +54,7 @@ TARGET_MODEL_MARKER=""
 TARGET_ABI_LIST=""
 TARGET_ABI64=""
 TARGET_TREBLE=""
+TARGET_ANDROID=""
 TARGET_SDK=""
 TARGET_VNDK_VERSION=""
 TARGET_VENDOR_API_LEVEL=""
@@ -68,6 +69,7 @@ if [ -n "$TARGET_PROPERTIES_FILE" ]; then
   TARGET_ABI64="$(target_prop ro.product.cpu.abilist64 || true)"
   [ -n "$TARGET_ABI64" ] || TARGET_ABI64="$(target_prop ro.product.system.cpu.abilist64 || true)"
   TARGET_TREBLE="$(target_prop ro.treble.enabled || true)"
+  TARGET_ANDROID="$(target_prop ro.build.version.release || true)"
   TARGET_SDK="$(target_prop ro.build.version.sdk || true)"
   TARGET_VNDK_VERSION="$(target_prop ro.vndk.version || true)"
   TARGET_VENDOR_API_LEVEL="$(target_prop ro.vendor.api_level || true)"
@@ -137,6 +139,9 @@ if [ "$TARGET_PROFILE" = provided ]; then
   if [[ "$TARGET_SDK" =~ ^[0-9]+$ ]] && [ "$TARGET_SDK" -lt 29 ]; then
     fail "Target Android SDK $TARGET_SDK predates the Android 10 GSI baseline."
   fi
+  if [[ "$SDK" =~ ^[0-9]+$ ]] && [[ "$TARGET_SDK" =~ ^[0-9]+$ ]] && [ "$TARGET_SDK" -lt "$SDK" ]; then
+    warn "Target Android SDK $TARGET_SDK is older than the source SDK $SDK; framework/vendor compatibility must be verified before flashing."
+  fi
   target_abi_text=",$TARGET_ABI_LIST,$TARGET_ABI64,"
   target_has64=0
   target_has32=0
@@ -167,6 +172,7 @@ mkdir -p "$(dirname "$REPORT")"
   echo "Target model marker: ${TARGET_MODEL_MARKER:-unknown}"
   echo "Target ABI: ${TARGET_ABI_LIST:-${TARGET_ABI64:-unknown}}"
   echo "Target Treble: ${TARGET_TREBLE:-unknown}"
+  echo "Target Android: ${TARGET_ANDROID:-unknown}"
   echo "Target SDK: ${TARGET_SDK:-unknown}"
   echo "Target VNDK version: ${TARGET_VNDK_VERSION:-not-present}"
   echo "Target vendor API level: ${TARGET_VENDOR_API_LEVEL:-not-present}"
