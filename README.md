@@ -82,7 +82,10 @@ filename when possible; official GSI packages are recorded as
 `not-device-specific`. If an Android device is connected through ADB, add
 `-TargetAdbSerial <serial>` to capture a small sanitized target-property
 profile; the release compatibility report will then check that target's
-Treble flag, ABI, SDK, and vendor-interface markers.
+Treble flag, ABI, Android SDK, and vendor-interface markers. If ADB is not
+available, save `adb shell getprop` output (or `key=value` lines) and pass
+`-TargetPropertiesPath .\target-getprop.txt` instead; unsupported properties
+are discarded before the profile is sent to GitHub.
 
 The downloader accepts only known Google distribution hosts (`dl.google.com`,
 `storage.googleapis.com`, `android.googleapis.com`, and

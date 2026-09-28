@@ -14,6 +14,7 @@ param(
     [ValidateSet('arm64', 'auto')]
     [string]$ExpectedArch = 'arm64',
     [string]$TargetAdbSerial = '',
+    [string]$TargetPropertiesPath = '',
     [bool]$PublishRelease = $true,
     [switch]$Wait
 )
@@ -44,33 +45,65 @@ if ($Sha256 -and $Sha256 -notmatch '^[0-9a-fA-F]{64}$') {
     throw 'Sha256 must be exactly 64 hexadecimal characters.'
 }
 
+if ($TargetAdbSerial -and $TargetPropertiesPath) {
+    throw 'TargetAdbSerial and TargetPropertiesPath are mutually exclusive.'
+}
+
 $targetProperties = ''
+$targetLines = @()
+$allowedTargetKeys = @(
+    'ro.product.device', 'ro.product.system.device', 'ro.product.model',
+    'ro.product.system.model', 'ro.product.cpu.abilist',
+    'ro.product.system.cpu.abilist', 'ro.product.cpu.abilist64',
+    'ro.product.system.cpu.abilist64', 'ro.treble.enabled',
+    'ro.build.version.release', 'ro.build.version.sdk', 'ro.vndk.version',
+    'ro.vendor.api_level'
+)
+$rawTargetProperties = @()
 if ($TargetAdbSerial) {
     if (-not (Get-Command adb -ErrorAction SilentlyContinue)) {
         throw 'TargetAdbSerial was supplied, but adb was not found on PATH.'
     }
-    $adbOutput = & adb -s $TargetAdbSerial shell getprop 2>&1
+    $rawTargetProperties = & adb -s $TargetAdbSerial shell getprop 2>&1
     if ($LASTEXITCODE -ne 0) {
-        throw "adb getprop failed for serial $TargetAdbSerial`: $($adbOutput -join ' ')"
+        throw "adb getprop failed for serial $TargetAdbSerial`: $($rawTargetProperties -join ' ')"
     }
-    $allowedTargetKeys = @(
-        'ro.product.device', 'ro.product.system.device', 'ro.product.model',
-        'ro.product.system.model', 'ro.product.cpu.abilist',
-        'ro.product.system.cpu.abilist', 'ro.product.cpu.abilist64',
-        'ro.product.system.cpu.abilist64', 'ro.treble.enabled',
-        'ro.build.version.release', 'ro.build.version.sdk', 'ro.vndk.version',
-        'ro.vendor.api_level'
-    )
-    $targetLines = foreach ($line in $adbOutput) {
-        if ($line -match '^\[(?<key>[^\]]+)\]: \[(?<value>.*)\]$' -and $allowedTargetKeys -contains $Matches.key) {
-            "{0}={1}" -f $Matches.key, $Matches.value
+}
+elseif ($TargetPropertiesPath) {
+    if (-not (Test-Path -LiteralPath $TargetPropertiesPath -PathType Leaf)) {
+        throw "TargetPropertiesPath was not found: $TargetPropertiesPath"
+    }
+    $rawTargetProperties = Get-Content -LiteralPath $TargetPropertiesPath
+}
+if ($rawTargetProperties) {
+    foreach ($line in $rawTargetProperties) {
+        $key = ''
+        $value = ''
+        if ($line -match '^\[(?<key>[^\]]+)\]: \[(?<value>.*)\]$') {
+            $key = $Matches.key
+            $value = $Matches.value
+        }
+        elseif ($line -match '^(?<key>[^=]+)=(?<value>.*)$') {
+            $key = $Matches.key
+            $value = $Matches.value
+        }
+        if ($allowedTargetKeys -contains $key) {
+            $targetLines += "{0}={1}" -f $key, $value
         }
     }
     if (-not $targetLines) {
-        throw "adb returned no supported target properties for serial $TargetAdbSerial."
+        if ($TargetAdbSerial) {
+            throw "adb returned no supported target properties for serial $TargetAdbSerial."
+        }
+        throw "TargetPropertiesPath contains no supported Android properties: $TargetPropertiesPath"
     }
     $targetProperties = $targetLines -join "`n"
-    Write-Host "Captured $($targetLines.Count) target properties from adb serial $TargetAdbSerial."
+    if ($TargetAdbSerial) {
+        Write-Host "Captured $($targetLines.Count) target properties from adb serial $TargetAdbSerial."
+    }
+    else {
+        Write-Host "Captured $($targetLines.Count) target properties from $TargetPropertiesPath."
+    }
 }
 
 $workflow = '.github/workflows/build_pixel_stock_gsi.yml'
