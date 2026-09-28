@@ -22,6 +22,7 @@ jobs:
           bash tests/test_compatibility.sh
           bash tests/test_layout_normalization.sh
           bash tests/test_source_metadata.sh
+          bash tests/test_package_extraction.sh
           python3 tests/test_official_page_parser.py
       - name: PowerShell launcher syntax
         shell: pwsh
