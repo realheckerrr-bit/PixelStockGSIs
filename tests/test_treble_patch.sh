@@ -27,5 +27,6 @@ if grep -q 'ro.treble.enabled' "$TEST_DIR/system/system_dlkm/etc/build.prop"; th
   exit 1
 fi
 grep -Fx "tool=PixelStockGSI's" "$TEST_DIR/system/pixelstockgsi.properties" >/dev/null
+grep -Fx 'source_mode=pixel_stock' "$TEST_DIR/system/pixelstockgsi.properties" >/dev/null
 
 echo "==> Treble patch tests passed."

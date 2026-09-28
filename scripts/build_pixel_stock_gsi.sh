@@ -8,13 +8,15 @@ WORK_DIR="${4:-$(pwd)/workspace}"
 EXPECTED_SHA256="${5:-}"
 TARGET_MODEL="${6:-generic}"
 EXPECTED_ARCH="${7:-arm64}"
+SOURCE_MODE="${8:-pixel_stock}"
 
 if [ -z "$GOOGLE_URL" ] || [ -z "$EXPECTED_SHA256" ]; then
-  echo "usage: $0 <official-google-url> <name> <ext4|erofs> <work-dir> <sha256> [target-model] [arm64|arm|a64|auto]" >&2
+  echo "usage: $0 <official-google-url> <name> <ext4|erofs> <work-dir> <sha256> [target-model] [arm64|arm|a64|auto] [pixel_stock|official_gsi]" >&2
   exit 2
 fi
 case "$FS_TYPE" in ext4|erofs) ;; *) echo "[-] filesystem must be ext4 or erofs" >&2; exit 2 ;; esac
 case "$EXPECTED_ARCH" in arm64|arm|a64|auto) ;; *) echo "[-] invalid ABI profile" >&2; exit 2 ;; esac
+case "$SOURCE_MODE" in pixel_stock|official_gsi) ;; *) echo "[-] invalid source mode" >&2; exit 2 ;; esac
 
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 OUTPUT_NAME=$(printf '%s' "$REQUESTED_NAME" | sed -E 's/[^A-Za-z0-9._-]+/_/g; s/^[.-]+//; s/[.-]+$//')
@@ -33,7 +35,7 @@ SYSTEM_ROOT="$WORK_DIR/system-root"
 bash "$SCRIPT_DIR/download_pixel_stock.sh" "$GOOGLE_URL" "$PACKAGE" "$EXPECTED_SHA256"
 bash "$SCRIPT_DIR/extract_pixel_system.sh" "$PACKAGE" "$WORK_DIR" "$SOURCE_IMAGE"
 bash "$SCRIPT_DIR/extract_system_root.sh" "$SOURCE_IMAGE" "$WORK_DIR" "$SYSTEM_ROOT"
-bash "$SCRIPT_DIR/patch_pixel_treble.sh" "$SYSTEM_ROOT"
+bash "$SCRIPT_DIR/patch_pixel_treble.sh" "$SYSTEM_ROOT" "$SOURCE_MODE"
 bash "$SCRIPT_DIR/build_gsi_image.sh" "$SYSTEM_ROOT" "$OUTPUT_NAME" "$FS_TYPE" "$WORK_DIR" "$OUTPUT_DIR"
 
 BUILD_PROP=$(cat "$WORK_DIR/build-prop.path")

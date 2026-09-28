@@ -2,10 +2,12 @@
 set -Eeuo pipefail
 
 SYSTEM_ROOT="${1:-}"
+SOURCE_MODE="${2:-pixel_stock}"
 if [ -z "$SYSTEM_ROOT" ] || [ ! -d "$SYSTEM_ROOT" ]; then
-  echo "usage: $0 <extracted-system-root>" >&2
+  echo "usage: $0 <extracted-system-root> [pixel_stock|official_gsi]" >&2
   exit 2
 fi
+case "$SOURCE_MODE" in pixel_stock|official_gsi) ;; *) echo "[-] invalid source mode" >&2; exit 2 ;; esac
 
 if [ "$(id -u)" -eq 0 ] || ! command -v sudo >/dev/null 2>&1; then
   SUDO=()
@@ -79,6 +81,7 @@ MARKER_PATH="$SYSTEM_ROOT/pixelstockgsi.properties"
 tool=PixelStockGSI's
 release_type=unofficial
 treble_patch=true
+source_mode=$SOURCE_MODE
 source_build_prop=$(basename "$BUILD_PROP")
 EOF
 "${SUDO[@]}" chmod 644 "$MARKER_PATH"

@@ -18,7 +18,7 @@ SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 VALIDATED_URL=$(bash "$SCRIPT_DIR/validate_google_url.sh" "$URL")
 mkdir -p "$(dirname "$(realpath "$DEST")")"
 
-echo "==> [DOWNLOAD] Downloading official Google Pixel package"
+echo "==> [DOWNLOAD] Downloading official Google package"
 echo "    Host: $(python3 -c 'from urllib.parse import urlparse; import sys; print(urlparse(sys.argv[1]).hostname)' "$VALIDATED_URL")"
 curl --fail --location --proto '=https' --tlsv1.2 \
   --retry 5 --retry-all-errors --retry-delay 5 \

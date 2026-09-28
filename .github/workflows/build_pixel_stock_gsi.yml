@@ -79,6 +79,10 @@ jobs:
           SOURCE_MODE: ${{ inputs.source_mode }}
         run: |
           set -Eeuo pipefail
+          case "$SOURCE_MODE" in
+            pixel_stock|official_gsi) ;;
+            *) echo "Unsupported source_mode: $SOURCE_MODE" >&2; exit 2 ;;
+          esac
           if [ "$SOURCE_MODE" = official_gsi ]; then
             test -n "$GOOGLE_URL_INPUT" || { echo "official_gsi requires a direct google_url and sha256" >&2; exit 2; }
             test -n "$GOOGLE_SHA256_INPUT" || { echo "official_gsi requires a direct google_url and sha256" >&2; exit 2; }
@@ -110,6 +114,7 @@ jobs:
           FILESYSTEM: ${{ inputs.filesystem }}
           TARGET_MODEL: ${{ inputs.target_model }}
           EXPECTED_ARCH: ${{ inputs.expected_arch }}
+          SOURCE_MODE: ${{ inputs.source_mode }}
         run: |
           chmod +x scripts/*.sh
           bash scripts/build_pixel_stock_gsi.sh \
@@ -119,7 +124,8 @@ jobs:
             "$GITHUB_WORKSPACE/workspace" \
             "$GOOGLE_SHA256" \
             "$TARGET_MODEL" \
-            "$EXPECTED_ARCH"
+            "$EXPECTED_ARCH" \
+            "$SOURCE_MODE"
 
       - name: Create checksums and release metadata
         id: metadata
