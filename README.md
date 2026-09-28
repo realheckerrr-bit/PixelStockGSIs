@@ -73,7 +73,10 @@ For Pixel official-page resolution, omit `-GoogleUrl` and `-Sha256` and
 provide a Pixel codename instead, for example `-DeviceCodename bluejay`.
 For the official GSI base, pass `-SourceMode official_gsi` together with a
 direct Google GSI ZIP URL and its `-Sha256`. Use `-PublishRelease $false` for
-a validation-only run.
+a validation-only run. When a direct URL is used without a codename, the
+release derives a clearly labelled device hint from the official package
+filename when possible; official GSI packages are recorded as
+`not-device-specific`.
 
 The downloader accepts only known Google distribution hosts (`dl.google.com`,
 `storage.googleapis.com`, `android.googleapis.com`, and

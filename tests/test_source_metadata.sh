@@ -35,4 +35,18 @@ grep -Fx 'ro.product.device=oriole' "$TEST_DIR/work/source-provenance.txt" >/dev
 grep -Fx 'ro.build.fingerprint=google/oriole/oriole:16/AP3A.test/1234567:user/release-keys' "$TEST_DIR/work/source-system-properties.txt" >/dev/null
 grep -Fx 'ro.product.system.device=oriole' "$TEST_DIR/work/source-system-properties.txt" >/dev/null
 
+bash "$ROOT_DIR/scripts/capture_source_metadata.sh" \
+  "$TEST_DIR/system" \
+  "$TEST_DIR/work-derived" \
+  "https://dl.google.com/developers/android/cinnamonbun/images/factory/bluejay_beta-build-factory-abcd1234.zip" \
+  "" >/dev/null
+grep -Fx 'Download device hint: bluejay (derived from package filename)' "$TEST_DIR/work-derived/source-provenance.txt" >/dev/null
+
+bash "$ROOT_DIR/scripts/capture_source_metadata.sh" \
+  "$TEST_DIR/system" \
+  "$TEST_DIR/work-gsi" \
+  "https://dl.google.com/developers/android/cinnamonbun/images/gsi/aosp_arm64-exp-build.zip" \
+  "auto" >/dev/null
+grep -Fx 'Download device hint: not-device-specific (official GSI package)' "$TEST_DIR/work-gsi/source-provenance.txt" >/dev/null
+
 echo "==> Source metadata tests passed."

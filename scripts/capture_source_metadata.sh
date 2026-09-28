@@ -46,6 +46,25 @@ url_without_query="${DOWNLOAD_URL%%\?*}"
 package_name="${url_without_query##*/}"
 [ -n "$package_name" ] || package_name="unknown"
 
+if [ -z "$DOWNLOAD_DEVICE_HINT" ] || [ "$DOWNLOAD_DEVICE_HINT" = "auto" ]; then
+  package_stem="${package_name%.zip}"
+  case "$package_stem" in
+    aosp_*|gsi_*|generic_*|*-gsi-*|*_gsi_*)
+      DOWNLOAD_DEVICE_HINT="not-device-specific (official GSI package)"
+      ;;
+    *)
+      package_candidate="${package_stem%%[-_]*}"
+      if [[ "$package_candidate" =~ ^[a-z0-9][a-z0-9]*$ ]] &&
+         [[ "$package_candidate" != "unknown" ]] &&
+         [[ "$package_candidate" != "google" ]]; then
+        DOWNLOAD_DEVICE_HINT="$package_candidate (derived from package filename)"
+      else
+        DOWNLOAD_DEVICE_HINT="not-supplied"
+      fi
+      ;;
+  esac
+fi
+
 metadata="$WORK_DIR/source-provenance.txt"
 properties="$WORK_DIR/source-system-properties.txt"
 mkdir -p "$WORK_DIR"
