@@ -47,7 +47,10 @@ The release tag follows the same style as the companion project:
    into one.
 6. Choose `ext4` for the broadest compatibility, or `erofs` for a smaller
    read-only image.
-7. Download the assets from the created GitHub Release and verify
+7. Leave **Publish release** enabled for the normal release workflow. Disable
+   it for a validation-only build; the image is built and checked on GitHub
+   but no public Release or workflow artifact is created.
+8. Download the assets from the created GitHub Release and verify
    `SHA256SUMS.txt` before using them.
 
 ### Windows quick launcher
@@ -65,7 +68,8 @@ the PowerShell dispatcher from a cloned copy of this repository:
 For Pixel official-page resolution, omit `-GoogleUrl` and `-Sha256` and
 provide a Pixel codename instead, for example `-DeviceCodename bluejay`.
 For the official GSI base, pass `-SourceMode official_gsi` together with a
-direct Google GSI ZIP URL and its `-Sha256`.
+direct Google GSI ZIP URL and its `-Sha256`. Use `-PublishRelease $false` for
+a validation-only run.
 
 The downloader accepts only known Google distribution hosts (`dl.google.com`,
 `storage.googleapis.com`, `android.googleapis.com`, and

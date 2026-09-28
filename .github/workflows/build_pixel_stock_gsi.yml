@@ -57,6 +57,11 @@ on:
         options:
           - arm64
           - auto
+      publish_release:
+        description: "Publish the generated images as a GitHub Release"
+        required: true
+        default: true
+        type: boolean
 
 permissions:
   contents: write
@@ -253,6 +258,7 @@ jobs:
           echo "OUTPUT_DIR=$OUTPUT_DIR" >> "$GITHUB_ENV"
 
       - name: Upload workflow artifact
+        if: ${{ inputs.publish_release }}
         uses: actions/upload-artifact@v4
         with:
           name: "${{ inputs.output_name }}-PixelStockGSI"
@@ -264,6 +270,7 @@ jobs:
           retention-days: 14
 
       - name: Publish GitHub Release
+        if: ${{ inputs.publish_release }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}

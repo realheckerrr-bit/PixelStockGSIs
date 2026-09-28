@@ -13,6 +13,7 @@ param(
     [string]$TargetModel = 'generic',
     [ValidateSet('arm64', 'auto')]
     [string]$ExpectedArch = 'arm64',
+    [bool]$PublishRelease = $true,
     [switch]$Wait
 )
 
@@ -53,6 +54,7 @@ $fields = @(
     "filesystem=$Filesystem"
     "target_model=$TargetModel"
     "expected_arch=$ExpectedArch"
+    "publish_release=$($PublishRelease.ToString().ToLowerInvariant())"
 )
 
 Write-Host "Dispatching PixelStockGSI in $Repository..."
