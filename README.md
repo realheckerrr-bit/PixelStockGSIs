@@ -118,8 +118,10 @@ an image from an unofficial mirror.
 
 ## Google licensing
 
-Google's Pixel images remain subject to the terms shown on Google's download
-pages and the license included with each package. PixelStockGSI's does not
-redistribute Google's stock package; it downloads the URL supplied at build
-time and publishes the resulting user-generated artifact. Check the license
-and your local laws before using or sharing any output.
+Google's Pixel and GSI images remain subject to the terms shown on Google's
+download pages and the license included with each package. PixelStockGSI's
+does not bundle a stock package in the repository; it downloads the URL
+supplied at build time and publishes the resulting user-generated artifact.
+The `official_gsi` mode may carry additional Google GSI terms that restrict
+modification or redistribution, so check the applicable license before using
+or sharing any output.

@@ -29,4 +29,10 @@ fi
 grep -Fx "tool=PixelStockGSI's" "$TEST_DIR/system/pixelstockgsi.properties" >/dev/null
 grep -Fx 'source_mode=pixel_stock' "$TEST_DIR/system/pixelstockgsi.properties" >/dev/null
 
+OFFICIAL_TEST_DIR="$TEST_DIR/official-gsi"
+mkdir -p "$OFFICIAL_TEST_DIR/system/etc"
+cp "$TEST_DIR/system/etc/build.prop" "$OFFICIAL_TEST_DIR/system/etc/build.prop"
+bash "$ROOT_DIR/scripts/patch_pixel_treble.sh" "$OFFICIAL_TEST_DIR/system" official_gsi >/dev/null
+grep -Fx 'source_mode=official_gsi' "$OFFICIAL_TEST_DIR/system/pixelstockgsi.properties" >/dev/null
+
 echo "==> Treble patch tests passed."
