@@ -156,6 +156,18 @@ jobs:
           SOURCE_SYSTEM_SHA=$(cat "$GITHUB_WORKSPACE/workspace/source-system.sha256")
           SOURCE_FILESYSTEM=$(cat "$GITHUB_WORKSPACE/workspace/source-filesystem.txt")
           SOURCE_MODE_VALUE="${SOURCE_MODE:-pixel_stock}"
+          case "$SOURCE_MODE_VALUE" in
+            pixel_stock)
+              SOURCE_DESCRIPTION="an unofficial Pixel-derived, GSI-shaped system image, not an AOSP-built universal GSI or a Google-signed Pixel image."
+              ;;
+            official_gsi)
+              SOURCE_DESCRIPTION="an unofficial derivative rebuilt from Google's official GSI base; it is not a Google-signed image."
+              ;;
+            *)
+              echo "Unsupported source mode in release metadata: $SOURCE_MODE_VALUE" >&2
+              exit 2
+              ;;
+          esac
           DEVICE_MARKER=$(prop ro.product.system.device)
           PIXEL_MODEL=$(prop ro.product.system.model)
           ANDROID_VERSION=$(prop ro.build.version.release)
@@ -229,8 +241,7 @@ jobs:
 
           ### Before flashing
 
-          This is an unofficial Pixel-derived, GSI-shaped system image, not an
-          AOSP-built universal GSI or a Google-signed Pixel image.
+          This release is $SOURCE_DESCRIPTION
           Keep the target device's matching vendor, kernel/modules, DTB,
           boot/vendor_boot, vbmeta policy, product/system_ext behavior, and
           recovery procedure. The builder cannot make one system image boot on
