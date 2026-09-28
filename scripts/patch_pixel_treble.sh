@@ -56,8 +56,18 @@ echo "==> [PATCH] Patching Pixel system metadata for Project Treble/GSI"
 "${SUDO[@]}" chmod 644 "$BUILD_PROP"
 set_prop ro.treble.enabled true
 set_prop ro.apex.updatable false
+# Keep source identity in source-system-properties.txt, but make the rebuilt
+# system partition expose a generic product identity like a GSI. These are
+# framework-facing markers; vendor, kernel, DTB, and boot metadata are not
+# copied or fabricated here.
+set_prop ro.product.device generic
+set_prop ro.product.name PixelStockGSI
+set_prop ro.product.model PixelStockGSI
+set_prop ro.product.manufacturer PixelStockGSI
+set_prop ro.build.product generic
 set_prop ro.product.system.device generic
 set_prop ro.product.system.name PixelStockGSI
+set_prop ro.product.system.model PixelStockGSI
 set_prop ro.gsi.type PixelStockGSI
 set_prop ro.gsi.official false
 

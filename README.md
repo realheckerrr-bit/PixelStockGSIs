@@ -111,8 +111,9 @@ GSI because doing so can create a misleading, unbootable cross-device image.
 The release's source-provenance section is captured before patching. It records
 the device selected on Google's download page (when supplied), the downloaded
 package filename, and the relevant original ro.product.* and ro.build.*
-properties. PixelStockGSI's generic markers therefore do not overwrite the
-identity of the device that supplied the source image.
+properties. The rebuilt system partition then replaces framework-facing
+product identity markers with generic PixelStockGSI values, while the release
+provenance retains the original source identity.
 
 This is not an OEM-signed Google image, does not contain Google's signing keys,
 does not disable AVB on the target, and does not include a universal kernel.
