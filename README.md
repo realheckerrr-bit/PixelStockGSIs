@@ -79,7 +79,10 @@ direct Google GSI ZIP URL and its `-Sha256`. Use `-PublishRelease $false` for
 a validation-only run. When a direct URL is used without a codename, the
 release derives a clearly labelled device hint from the official package
 filename when possible; official GSI packages are recorded as
-`not-device-specific`.
+`not-device-specific`. If an Android device is connected through ADB, add
+`-TargetAdbSerial <serial>` to capture a small sanitized target-property
+profile; the release compatibility report will then check that target's
+Treble flag, ABI, SDK, and vendor-interface markers.
 
 The downloader accepts only known Google distribution hosts (`dl.google.com`,
 `storage.googleapis.com`, `android.googleapis.com`, and

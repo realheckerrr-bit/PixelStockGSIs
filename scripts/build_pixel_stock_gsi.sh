@@ -10,9 +10,10 @@ TARGET_MODEL="${6:-generic}"
 EXPECTED_ARCH="${7:-arm64}"
 SOURCE_MODE="${8:-pixel_stock}"
 DOWNLOAD_DEVICE_HINT="${9:-}"
+TARGET_PROPERTIES_FILE="${10:-}"
 
 if [ -z "$GOOGLE_URL" ] || [ -z "$EXPECTED_SHA256" ]; then
-  echo "usage: $0 <official-google-url> <name> <ext4|erofs> <work-dir> <sha256> [target-model] [arm64|arm|a64|auto] [pixel_stock|official_gsi] [download-device-hint]" >&2
+  echo "usage: $0 <official-google-url> <name> <ext4|erofs> <work-dir> <sha256> [target-model] [arm64|arm|a64|auto] [pixel_stock|official_gsi] [download-device-hint] [target-properties-file]" >&2
   exit 2
 fi
 case "$FS_TYPE" in ext4|erofs) ;; *) echo "[-] filesystem must be ext4 or erofs" >&2; exit 2 ;; esac
@@ -43,7 +44,7 @@ bash "$SCRIPT_DIR/build_gsi_image.sh" "$SYSTEM_ROOT" "$OUTPUT_NAME" "$FS_TYPE" "
 
 BUILD_PROP=$(cat "$WORK_DIR/build-prop.path")
 bash "$SCRIPT_DIR/check_gsi_compatibility.sh" \
-  "$BUILD_PROP" "$TARGET_MODEL" "$OUTPUT_DIR/compatibility-report.txt" "$EXPECTED_ARCH" "$SYSTEM_ROOT"
+  "$BUILD_PROP" "$TARGET_MODEL" "$OUTPUT_DIR/compatibility-report.txt" "$EXPECTED_ARCH" "$SYSTEM_ROOT" "$TARGET_PROPERTIES_FILE"
 
 printf '%s\n' "rebuilt-$FS_TYPE" > "$WORK_DIR/image-mode.txt"
 printf '%s\n' "$OUTPUT_NAME" > "$WORK_DIR/output-name.txt"

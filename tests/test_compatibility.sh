@@ -22,10 +22,24 @@ ro.llndk.api_level=36
 ro.product.first_api_level=35
 EOF
 
+cat > "$TEST_DIR/target.properties" <<'EOF'
+ro.product.device=test-target
+ro.product.model=Test Target
+ro.product.cpu.abilist=arm64-v8a,armeabi-v7a
+ro.product.cpu.abilist64=arm64-v8a
+ro.treble.enabled=true
+ro.build.version.sdk=36
+ro.vndk.version=36
+ro.vendor.api_level=36
+EOF
+
 bash "$ROOT_DIR/scripts/check_gsi_compatibility.sh" \
-  "$TEST_DIR/build.prop" generic "$TEST_DIR/report.txt" arm64 "$TEST_DIR/system-root" >/dev/null
+  "$TEST_DIR/build.prop" generic "$TEST_DIR/report.txt" arm64 "$TEST_DIR/system-root" "$TEST_DIR/target.properties" >/dev/null
 grep -Fx 'Status: WARN' "$TEST_DIR/report.txt" >/dev/null
 grep -F 'universal kernel' "$TEST_DIR/report.txt" >/dev/null
+grep -Fx 'Target properties profile: provided' "$TEST_DIR/report.txt" >/dev/null
+grep -Fx 'Target device: test-target' "$TEST_DIR/report.txt" >/dev/null
+grep -Fx 'Target Treble: true' "$TEST_DIR/report.txt" >/dev/null
 grep -Fx 'VNDK version: 36' "$TEST_DIR/report.txt" >/dev/null
 grep -Fx 'LL-NDK API level: 36' "$TEST_DIR/report.txt" >/dev/null
 grep -Fx 'System layout: system-as-root' "$TEST_DIR/report.txt" >/dev/null

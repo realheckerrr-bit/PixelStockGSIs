@@ -13,6 +13,7 @@ param(
     [string]$TargetModel = 'generic',
     [ValidateSet('arm64', 'auto')]
     [string]$ExpectedArch = 'arm64',
+    [string]$TargetAdbSerial = '',
     [bool]$PublishRelease = $true,
     [switch]$Wait
 )
@@ -43,6 +44,34 @@ if ($Sha256 -and $Sha256 -notmatch '^[0-9a-fA-F]{64}$') {
     throw 'Sha256 must be exactly 64 hexadecimal characters.'
 }
 
+$targetProperties = ''
+if ($TargetAdbSerial) {
+    if (-not (Get-Command adb -ErrorAction SilentlyContinue)) {
+        throw 'TargetAdbSerial was supplied, but adb was not found on PATH.'
+    }
+    $adbOutput = & adb -s $TargetAdbSerial shell getprop 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        throw "adb getprop failed for serial $TargetAdbSerial`: $($adbOutput -join ' ')"
+    }
+    $allowedTargetKeys = @(
+        'ro.product.device', 'ro.product.system.device', 'ro.product.model',
+        'ro.product.system.model', 'ro.product.cpu.abilist',
+        'ro.product.system.cpu.abilist', 'ro.product.cpu.abilist64',
+        'ro.product.system.cpu.abilist64', 'ro.treble.enabled',
+        'ro.build.version.sdk', 'ro.vndk.version', 'ro.vendor.api_level'
+    )
+    $targetLines = foreach ($line in $adbOutput) {
+        if ($line -match '^\[(?<key>[^\]]+)\]: \[(?<value>.*)\]$' -and $allowedTargetKeys -contains $Matches.key) {
+            "{0}={1}" -f $Matches.key, $Matches.value
+        }
+    }
+    if (-not $targetLines) {
+        throw "adb returned no supported target properties for serial $TargetAdbSerial."
+    }
+    $targetProperties = $targetLines -join "`n"
+    Write-Host "Captured $($targetLines.Count) target properties from adb serial $TargetAdbSerial."
+}
+
 $workflow = '.github/workflows/build_pixel_stock_gsi.yml'
 $fields = @(
     "google_url=$GoogleUrl"
@@ -54,6 +83,7 @@ $fields = @(
     "filesystem=$Filesystem"
     "target_model=$TargetModel"
     "expected_arch=$ExpectedArch"
+    "target_properties=$targetProperties"
     "publish_release=$($PublishRelease.ToString().ToLowerInvariant())"
 )
 

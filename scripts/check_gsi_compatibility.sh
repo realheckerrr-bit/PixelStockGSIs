@@ -6,11 +6,16 @@ TARGET_MODEL="${2:-generic}"
 REPORT="${3:-compatibility-report.txt}"
 EXPECTED_ARCH="${4:-arm64}"
 SYSTEM_ROOT="${5:-}"
+TARGET_PROPERTIES_FILE="${6:-}"
 if [ -z "$BUILD_PROP" ] || [ ! -f "$BUILD_PROP" ]; then
   echo "[-] build.prop was not found: ${BUILD_PROP:-<empty>}" >&2
   exit 2
 fi
 case "$EXPECTED_ARCH" in arm64|arm|a64|auto) ;; *) echo "[-] invalid ABI: $EXPECTED_ARCH" >&2; exit 2 ;; esac
+if [ -n "$TARGET_PROPERTIES_FILE" ] && [ ! -f "$TARGET_PROPERTIES_FILE" ]; then
+  echo "[-] target properties file was not found: $TARGET_PROPERTIES_FILE" >&2
+  exit 2
+fi
 
 prop() {
   awk -v key="$1" '
@@ -34,6 +39,39 @@ VNDK_VERSION="$(prop ro.vndk.version || true)"
 VENDOR_API_LEVEL="$(prop ro.vendor.api_level || true)"
 LLNDK_API_LEVEL="$(prop ro.llndk.api_level || true)"
 FIRST_API_LEVEL="$(prop ro.product.first_api_level || true)"
+
+target_prop() {
+  [ -n "$TARGET_PROPERTIES_FILE" ] || return 0
+  awk -v key="$1" '
+    /^[[:space:]]*#/ { next }
+    index($0, key "=") == 1 { sub(/^[^=]*=/, ""); print; exit }
+  ' "$TARGET_PROPERTIES_FILE"
+}
+
+TARGET_PROFILE="not-provided"
+TARGET_DEVICE=""
+TARGET_MODEL_MARKER=""
+TARGET_ABI_LIST=""
+TARGET_ABI64=""
+TARGET_TREBLE=""
+TARGET_SDK=""
+TARGET_VNDK_VERSION=""
+TARGET_VENDOR_API_LEVEL=""
+if [ -n "$TARGET_PROPERTIES_FILE" ]; then
+  TARGET_PROFILE="provided"
+  TARGET_DEVICE="$(target_prop ro.product.device || true)"
+  [ -n "$TARGET_DEVICE" ] || TARGET_DEVICE="$(target_prop ro.product.system.device || true)"
+  TARGET_MODEL_MARKER="$(target_prop ro.product.model || true)"
+  [ -n "$TARGET_MODEL_MARKER" ] || TARGET_MODEL_MARKER="$(target_prop ro.product.system.model || true)"
+  TARGET_ABI_LIST="$(target_prop ro.product.cpu.abilist || true)"
+  [ -n "$TARGET_ABI_LIST" ] || TARGET_ABI_LIST="$(target_prop ro.product.system.cpu.abilist || true)"
+  TARGET_ABI64="$(target_prop ro.product.cpu.abilist64 || true)"
+  [ -n "$TARGET_ABI64" ] || TARGET_ABI64="$(target_prop ro.product.system.cpu.abilist64 || true)"
+  TARGET_TREBLE="$(target_prop ro.treble.enabled || true)"
+  TARGET_SDK="$(target_prop ro.build.version.sdk || true)"
+  TARGET_VNDK_VERSION="$(target_prop ro.vndk.version || true)"
+  TARGET_VENDOR_API_LEVEL="$(target_prop ro.vendor.api_level || true)"
+fi
 
 SYSTEM_LAYOUT="not-checked"
 VINTF_METADATA="not-checked"
@@ -91,6 +129,30 @@ fi
 if [ "$LAYOUT_NORMALIZATION" = applied ]; then
   warn "Generic root mount points/symlinks were added; this does not supply a target ramdisk, kernel, vendor HAL, or device VINTF manifest."
 fi
+if [ "$TARGET_PROFILE" = provided ]; then
+  case "$TARGET_TREBLE" in
+    true|1) ;;
+    *) fail "Target device does not advertise Project Treble (ro.treble.enabled=true)." ;;
+  esac
+  if [[ "$TARGET_SDK" =~ ^[0-9]+$ ]] && [ "$TARGET_SDK" -lt 29 ]; then
+    fail "Target Android SDK $TARGET_SDK predates the Android 10 GSI baseline."
+  fi
+  target_abi_text=",$TARGET_ABI_LIST,$TARGET_ABI64,"
+  target_has64=0
+  target_has32=0
+  case "$target_abi_text" in *,arm64-v8a,*|*,arm64,*) target_has64=1 ;; esac
+  case "$target_abi_text" in *,armeabi-v7a,*|*,armeabi,*) target_has32=1 ;; esac
+  case "$EXPECTED_ARCH" in
+    arm64) [ "$target_has64" = 1 ] || fail "Target device does not advertise ARM64." ;;
+    arm|a64) [ "$target_has32" = 1 ] || fail "Target device does not advertise ARM32." ;;
+    auto) [ "$target_has64" = 1 ] || [ "$target_has32" = 1 ] || warn "Target CPU ABI metadata is missing." ;;
+  esac
+  if [ -z "$TARGET_VNDK_VERSION" ] && [ -z "$TARGET_VENDOR_API_LEVEL" ]; then
+    warn "Target profile has no VNDK/vendor-API marker; vendor interface matching remains unverified."
+  fi
+else
+  warn "No target getprop profile was supplied; device-specific Treble and ABI checks are limited."
+fi
 warn "This GSI does not contain a universal kernel, vendor HAL, DTB, boot chain, or vbmeta policy."
 warn "Target '$TARGET_MODEL' must provide matching Treble vendor/system_ext/product behavior."
 
@@ -100,6 +162,14 @@ mkdir -p "$(dirname "$REPORT")"
   echo "======================================"
   echo "Status: $STATUS"
   echo "Target model: $TARGET_MODEL"
+  echo "Target properties profile: $TARGET_PROFILE"
+  echo "Target device: ${TARGET_DEVICE:-unknown}"
+  echo "Target model marker: ${TARGET_MODEL_MARKER:-unknown}"
+  echo "Target ABI: ${TARGET_ABI_LIST:-${TARGET_ABI64:-unknown}}"
+  echo "Target Treble: ${TARGET_TREBLE:-unknown}"
+  echo "Target SDK: ${TARGET_SDK:-unknown}"
+  echo "Target VNDK version: ${TARGET_VNDK_VERSION:-not-present}"
+  echo "Target vendor API level: ${TARGET_VENDOR_API_LEVEL:-not-present}"
   echo "Requested ABI: $EXPECTED_ARCH"
   echo "Detected ABI: ${ABI_LIST:-${ABI64:-${ABI:-unknown}}}"
   echo "Device marker: ${DEVICE:-unknown}"
