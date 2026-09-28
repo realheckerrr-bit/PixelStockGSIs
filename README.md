@@ -1,5 +1,9 @@
 # PixelStockGSI's
 
+The workflow also normalizes missing generic GSI root mount points and
+system-as-root entry-point symlinks before rebuilding the image. The release
+compatibility report records that change and its scope.
+
 PixelStockGSI's is a GitHub Actions tool that downloads an official Google
 Pixel factory/OTA image or an official Google GSI ZIP, extracts its
 `system.img`, applies a small Project Treble/GSI compatibility patch, rebuilds

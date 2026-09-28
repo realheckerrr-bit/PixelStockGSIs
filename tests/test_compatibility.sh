@@ -29,6 +29,7 @@ grep -F 'universal kernel' "$TEST_DIR/report.txt" >/dev/null
 grep -Fx 'VNDK version: 36' "$TEST_DIR/report.txt" >/dev/null
 grep -Fx 'LL-NDK API level: 36' "$TEST_DIR/report.txt" >/dev/null
 grep -Fx 'System layout: system-as-root' "$TEST_DIR/report.txt" >/dev/null
+grep -Fx 'GSI layout normalization: not-checked' "$TEST_DIR/report.txt" >/dev/null
 grep -Fx 'Framework VINTF metadata: present' "$TEST_DIR/report.txt" >/dev/null
 
 echo "==> Compatibility tests passed."

@@ -37,8 +37,9 @@ FIRST_API_LEVEL="$(prop ro.product.first_api_level || true)"
 
 SYSTEM_LAYOUT="not-checked"
 VINTF_METADATA="not-checked"
+LAYOUT_NORMALIZATION="not-checked"
 if [ -n "$SYSTEM_ROOT" ] && [ -d "$SYSTEM_ROOT" ]; then
-  if [ -f "$SYSTEM_ROOT/init" ] && [ -d "$SYSTEM_ROOT/system" ]; then
+  if { [ -f "$SYSTEM_ROOT/init" ] || { [ -L "$SYSTEM_ROOT/init" ] && [ "$(readlink "$SYSTEM_ROOT/init")" = "/system/bin/init" ]; }; } && [ -d "$SYSTEM_ROOT/system" ]; then
     SYSTEM_LAYOUT="system-as-root"
   elif [ -f "$SYSTEM_ROOT/system/bin/init" ]; then
     SYSTEM_LAYOUT="system-mounted"
@@ -51,6 +52,10 @@ if [ -n "$SYSTEM_ROOT" ] && [ -d "$SYSTEM_ROOT" ]; then
     VINTF_METADATA="present"
   else
     VINTF_METADATA="not-found"
+  fi
+  if [ -f "$SYSTEM_ROOT/pixelstockgsi-layout.properties" ]; then
+    LAYOUT_NORMALIZATION=$(awk -F= '$1 == "layout_normalization" { print $2; exit }' "$SYSTEM_ROOT/pixelstockgsi-layout.properties")
+    [ -n "$LAYOUT_NORMALIZATION" ] || LAYOUT_NORMALIZATION="unknown"
   fi
 fi
 
@@ -83,6 +88,9 @@ fi
 if [ "$VINTF_METADATA" = not-found ]; then
   warn "No framework VINTF metadata was found in the extracted system tree."
 fi
+if [ "$LAYOUT_NORMALIZATION" = applied ]; then
+  warn "Generic root mount points/symlinks were added; this does not supply a target ramdisk, kernel, vendor HAL, or device VINTF manifest."
+fi
 warn "This GSI does not contain a universal kernel, vendor HAL, DTB, boot chain, or vbmeta policy."
 warn "Target '$TARGET_MODEL' must provide matching Treble vendor/system_ext/product behavior."
 
@@ -103,6 +111,7 @@ mkdir -p "$(dirname "$REPORT")"
   echo "LL-NDK API level: ${LLNDK_API_LEVEL:-not-present}"
   echo "First API level: ${FIRST_API_LEVEL:-unknown}"
   echo "System layout: $SYSTEM_LAYOUT"
+  echo "GSI layout normalization: $LAYOUT_NORMALIZATION"
   echo "Framework VINTF metadata: $VINTF_METADATA"
   echo
   echo "Hard failures:"
