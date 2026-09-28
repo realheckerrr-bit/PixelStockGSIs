@@ -43,7 +43,10 @@ The release tag follows the same style as the companion project:
    - Android 17 QPR2 example page: <https://developer.android.com/about/versions/17/qpr2/download>
 4. When using page resolution, enter the row codename (`bluejay`, `panther`,
    `shiba`, etc.). The resolver extracts only the matching Google URL and the
-   SHA-256 printed in that official row.
+   SHA-256 printed in that official row. Use a Google page for the matching
+   Android release family; the current generic factory page may no longer list
+   older Pixel codenames. If a row is missing, the workflow error lists the
+   row IDs that the selected page actually contains.
 5. Leave **Source mode** as `pixel_stock` for the requested Pixel-derived
    build. For the strongest cross-device GSI baseline, choose `official_gsi`
    and provide the direct Google GSI ZIP URL plus its SHA-256; that mode uses

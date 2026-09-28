@@ -25,7 +25,17 @@ class OfficialPageParserTest(unittest.TestCase):
 
     def test_rejects_unknown_device(self):
         with self.assertRaises(ValueError):
-            RESOLVER.parse_image_page("<table></table>", "unknown")
+            RESOLVER.parse_image_page(
+                '<table><tr id="panther"><td>Pixel 7</td></tr></table>',
+                "unknown",
+            )
+        try:
+            RESOLVER.parse_image_page(
+                '<table><tr id="panther"><td>Pixel 7</td></tr></table>',
+                "unknown",
+            )
+        except ValueError as exc:
+            self.assertIn("panther", str(exc))
 
 
 if __name__ == "__main__":

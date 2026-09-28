@@ -45,7 +45,24 @@ def parse_image_page(page_html: str, device_codename: str) -> tuple[str, str]:
         flags=re.IGNORECASE | re.DOTALL,
     )
     if not row_match:
-        raise ValueError(f"device codename was not found on the official page: {codename}")
+        available = sorted(
+            set(
+                re.findall(
+                    r'<tr\b[^>]*\bid=[\"\']([a-z0-9][a-z0-9_-]*)[\"\']',
+                    page_html,
+                    flags=re.IGNORECASE,
+                )
+            )
+        )
+        if available:
+            preview = ", ".join(available[:20])
+            if len(available) > 20:
+                preview += ", ..."
+            raise ValueError(
+                f"device codename was not found on the official page: {codename}; "
+                f"available row ids include: {preview}"
+            )
+        raise ValueError(f"device codename was not found on the official page: {codename}; no device rows were found")
     row = html.unescape(row_match.group(0))
 
     hashes = re.findall(r"(?<![0-9a-f])[0-9a-f]{64}(?![0-9a-f])", row, re.IGNORECASE)
