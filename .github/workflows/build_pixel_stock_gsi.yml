@@ -131,6 +131,7 @@ jobs:
           chmod +x scripts/*.sh
           TARGET_PROPERTIES_FILE=""
           if [ -n "$TARGET_PROPERTIES_INPUT" ]; then
+            mkdir -p "$GITHUB_WORKSPACE/workspace"
             TARGET_PROPERTIES_FILE="$GITHUB_WORKSPACE/workspace/target-system-properties.txt"
             printf '%s\n' "$TARGET_PROPERTIES_INPUT" > "$TARGET_PROPERTIES_FILE"
           fi
