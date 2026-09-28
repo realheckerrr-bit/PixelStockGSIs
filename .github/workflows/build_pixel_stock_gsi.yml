@@ -120,6 +120,7 @@ jobs:
           TARGET_MODEL: ${{ inputs.target_model }}
           EXPECTED_ARCH: ${{ inputs.expected_arch }}
           SOURCE_MODE: ${{ inputs.source_mode }}
+          DOWNLOAD_DEVICE_HINT: ${{ inputs.device_codename }}
         run: |
           chmod +x scripts/*.sh
           bash scripts/build_pixel_stock_gsi.sh \
@@ -130,7 +131,8 @@ jobs:
             "$GOOGLE_SHA256" \
             "$TARGET_MODEL" \
             "$EXPECTED_ARCH" \
-            "$SOURCE_MODE"
+            "$SOURCE_MODE" \
+            "$DOWNLOAD_DEVICE_HINT"
 
       - name: Create checksums and release metadata
         id: metadata
@@ -140,6 +142,7 @@ jobs:
           TARGET_MODEL: ${{ inputs.target_model }}
           EXPECTED_ARCH: ${{ inputs.expected_arch }}
           SOURCE_MODE: ${{ inputs.source_mode }}
+          DOWNLOAD_DEVICE_HINT: ${{ inputs.device_codename }}
         run: |
           set -Eeuo pipefail
           OUTPUT_DIR="$GITHUB_WORKSPACE/workspace/output"
@@ -148,10 +151,10 @@ jobs:
           test -n "$IMAGE_XZ" && test -n "$IMAGE_GZ"
           (cd "$OUTPUT_DIR" && sha256sum *.img.xz *.img.gz > SHA256SUMS.txt)
 
-          BUILD_PROP=$(cat "$GITHUB_WORKSPACE/workspace/build-prop.path")
-          prop() {
+          SOURCE_PROPERTIES_FILE="$GITHUB_WORKSPACE/workspace/source-system-properties.txt"
+          source_prop() {
             local key="$1"
-            awk -v wanted="$key" 'index($0, wanted "=") == 1 { sub(/^[^=]*=/, ""); print; exit }' "$BUILD_PROP"
+            awk -F= -v wanted="$key" '$1 == wanted { sub(/^[^=]*=/, ""); print; exit }' "$SOURCE_PROPERTIES_FILE"
           }
           RAW_BYTES=$(xz --robot --list "$IMAGE_XZ" | awk -F '\t' '$1 == "totals" { print $5 }')
           [ -n "$RAW_BYTES" ] || RAW_BYTES=0
@@ -160,6 +163,8 @@ jobs:
           TOOL_VERSION=$(cat VERSION)
           SOURCE_SYSTEM_SHA=$(cat "$GITHUB_WORKSPACE/workspace/source-system.sha256")
           SOURCE_FILESYSTEM=$(cat "$GITHUB_WORKSPACE/workspace/source-filesystem.txt")
+          SOURCE_PROVENANCE=$(cat "$GITHUB_WORKSPACE/workspace/source-provenance.txt")
+          SOURCE_PROPERTIES=$(cat "$GITHUB_WORKSPACE/workspace/source-system-properties.txt")
           SOURCE_MODE_VALUE="${SOURCE_MODE:-pixel_stock}"
           case "$SOURCE_MODE_VALUE" in
             pixel_stock)
@@ -173,13 +178,15 @@ jobs:
               exit 2
               ;;
           esac
-          DEVICE_MARKER=$(prop ro.product.system.device)
-          PIXEL_MODEL=$(prop ro.product.system.model)
-          ANDROID_VERSION=$(prop ro.build.version.release)
-          ANDROID_SDK=$(prop ro.build.version.sdk)
-          BUILD_ID=$(prop ro.build.id)
-          BUILD_FINGERPRINT=$(prop ro.build.fingerprint)
-          SECURITY_PATCH=$(prop ro.build.version.security_patch)
+          SOURCE_DEVICE=$(source_prop ro.product.device)
+          SOURCE_SYSTEM_DEVICE=$(source_prop ro.product.system.device)
+          SOURCE_MODEL=$(source_prop ro.product.model)
+          SOURCE_SYSTEM_MODEL=$(source_prop ro.product.system.model)
+          ANDROID_VERSION=$(source_prop ro.build.version.release)
+          ANDROID_SDK=$(source_prop ro.build.version.sdk)
+          BUILD_ID=$(source_prop ro.build.id)
+          BUILD_FINGERPRINT=$(source_prop ro.build.fingerprint)
+          SECURITY_PATCH=$(source_prop ro.build.version.security_patch)
           IMAGE_MODE=$(cat "$GITHUB_WORKSPACE/workspace/image-mode.txt")
           CHECKSUMS=$(cat "$OUTPUT_DIR/SHA256SUMS.txt")
           COMPATIBILITY_REPORT=$(cat "$OUTPUT_DIR/compatibility-report.txt")
@@ -211,8 +218,10 @@ jobs:
           - Output image size before compression: \`$RAW_BYTES bytes\`
           - Target model hint: \`$TARGET_MODEL\`
           - Requested ABI: \`$EXPECTED_ARCH\`
-          - Device marker: \`$DEVICE_MARKER\`
-          - Pixel model marker: \`$PIXEL_MODEL\`
+          - Original source device: \`$SOURCE_DEVICE\`
+          - Original system device: \`$SOURCE_SYSTEM_DEVICE\`
+          - Original source model: \`$SOURCE_MODEL\`
+          - Original system model: \`$SOURCE_SYSTEM_MODEL\`
           - Android version: \`$ANDROID_VERSION\` (SDK \`$ANDROID_SDK\`)
           - Build ID: \`$BUILD_ID\`
           - Build fingerprint: \`$BUILD_FINGERPRINT\`
@@ -225,6 +234,21 @@ jobs:
           Checksums:
 
           <pre>$CHECKSUMS</pre>
+
+          </details>
+
+          ### Downloaded device and source properties
+
+          The device identity below is captured from the downloaded package
+          and the unmodified system properties before PixelStockGSI's patch is
+          applied. The later generic markers are not used as the source identity.
+
+          <details>
+          <summary>Show downloaded-device provenance and original system properties</summary>
+
+          <pre>$SOURCE_PROVENANCE</pre>
+
+          <pre>$SOURCE_PROPERTIES</pre>
 
           </details>
 

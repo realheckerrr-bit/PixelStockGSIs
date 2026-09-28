@@ -20,8 +20,8 @@ Each successful workflow run publishes:
 - a source-mode record identifying whether the build used a Pixel stock image
   or Google's official GSI image as its base;
 - complete build information embedded in the GitHub Release notes, including
-  the exact Google URL, source SHA-256, Pixel build properties, and GitHub
-  run/commit;
+  the exact Google URL, source SHA-256, downloaded-device hint, the original
+  unmodified system properties, and GitHub run/commit;
 - the complete compatibility preflight report embedded in the GitHub Release
   notes and attached as `compatibility-report.txt`.
 
@@ -97,6 +97,12 @@ warnings for device-specific dependencies instead of pretending they are
 universal. A Pixel system image may still need a compatible vendor/product/
 system_ext combination; those partitions are not silently copied into the
 GSI because doing so can create a misleading, unbootable cross-device image.
+
+The release's source-provenance section is captured before patching. It records
+the device selected on Google's download page (when supplied), the downloaded
+package filename, and the relevant original ro.product.* and ro.build.*
+properties. PixelStockGSI's generic markers therefore do not overwrite the
+identity of the device that supplied the source image.
 
 This is not an OEM-signed Google image, does not contain Google's signing keys,
 does not disable AVB on the target, and does not include a universal kernel.
