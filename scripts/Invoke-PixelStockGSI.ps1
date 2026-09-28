@@ -104,6 +104,13 @@ if ($rawTargetProperties) {
     else {
         Write-Host "Captured $($targetLines.Count) target properties from $TargetPropertiesPath."
     }
+    if ($TargetModel -eq 'generic') {
+        $deviceLine = $targetLines | Where-Object { $_ -match '^ro\.product\.device=' } | Select-Object -First 1
+        if ($deviceLine -match '^ro\.product\.device=(.+)$' -and $Matches[1]) {
+            $TargetModel = $Matches[1]
+            Write-Host "Derived target model hint from ro.product.device: $TargetModel"
+        }
+    }
 }
 
 $workflow = '.github/workflows/build_pixel_stock_gsi.yml'

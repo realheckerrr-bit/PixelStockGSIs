@@ -135,13 +135,20 @@ jobs:
             TARGET_PROPERTIES_FILE="$GITHUB_WORKSPACE/workspace/target-system-properties.txt"
             printf '%s\n' "$TARGET_PROPERTIES_INPUT" > "$TARGET_PROPERTIES_FILE"
           fi
+          TARGET_MODEL_EFFECTIVE="$TARGET_MODEL"
+          if [ "$TARGET_MODEL_EFFECTIVE" = generic ] && [ -n "$TARGET_PROPERTIES_INPUT" ]; then
+            TARGET_DEVICE_FROM_PROFILE=$(printf '%s\n' "$TARGET_PROPERTIES_INPUT" | awk -F= '$1 == "ro.product.device" { print $2; exit }')
+            if [ -n "$TARGET_DEVICE_FROM_PROFILE" ]; then
+              TARGET_MODEL_EFFECTIVE="$TARGET_DEVICE_FROM_PROFILE"
+            fi
+          fi
           bash scripts/build_pixel_stock_gsi.sh \
             "$GOOGLE_URL" \
             "$OUTPUT_NAME" \
             "$FILESYSTEM" \
             "$GITHUB_WORKSPACE/workspace" \
             "$GOOGLE_SHA256" \
-            "$TARGET_MODEL" \
+            "$TARGET_MODEL_EFFECTIVE" \
             "$EXPECTED_ARCH" \
             "$SOURCE_MODE" \
             "$DOWNLOAD_DEVICE_HINT" \
@@ -180,6 +187,13 @@ jobs:
           SOURCE_PROVENANCE=$(cat "$GITHUB_WORKSPACE/workspace/source-provenance.txt")
           SOURCE_PROPERTIES=$(cat "$GITHUB_WORKSPACE/workspace/source-system-properties.txt")
           SOURCE_MODE_VALUE="${SOURCE_MODE:-pixel_stock}"
+          TARGET_MODEL_EFFECTIVE="$TARGET_MODEL"
+          if [ "$TARGET_MODEL_EFFECTIVE" = generic ] && [ -n "$TARGET_PROPERTIES_INPUT" ]; then
+            TARGET_DEVICE_FROM_PROFILE=$(printf '%s\n' "$TARGET_PROPERTIES_INPUT" | awk -F= '$1 == "ro.product.device" { print $2; exit }')
+            if [ -n "$TARGET_DEVICE_FROM_PROFILE" ]; then
+              TARGET_MODEL_EFFECTIVE="$TARGET_DEVICE_FROM_PROFILE"
+            fi
+          fi
           TARGET_PROFILE="not-provided"
           if [ -n "$TARGET_PROPERTIES_INPUT" ]; then
             TARGET_PROFILE="provided"
@@ -219,7 +233,7 @@ jobs:
           - Source package SHA-256: \`$GOOGLE_SHA256\`
           - Source mode: \`$SOURCE_MODE_VALUE\`
           - Output filesystem: \`$FILESYSTEM\`
-          - Target model hint: \`$TARGET_MODEL\`
+          - Target model hint: \`$TARGET_MODEL_EFFECTIVE\`
           - Target properties profile: \`$TARGET_PROFILE\`
           - ABI gate: \`$EXPECTED_ARCH\`
           - Workflow run: [$GITHUB_RUN_ID]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID)
@@ -235,7 +249,7 @@ jobs:
           - Source filesystem: \`$SOURCE_FILESYSTEM\`
           - Output filesystem: \`$FILESYSTEM\`
           - Output image size before compression: \`$RAW_BYTES bytes\`
-          - Target model hint: \`$TARGET_MODEL\`
+          - Target model hint: \`$TARGET_MODEL_EFFECTIVE\`
           - Requested ABI: \`$EXPECTED_ARCH\`
           - Original source device: \`$SOURCE_DEVICE\`
           - Original system device: \`$SOURCE_SYSTEM_DEVICE\`

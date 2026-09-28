@@ -86,6 +86,8 @@ Treble flag, ABI, Android SDK, and vendor-interface markers. If ADB is not
 available, save `adb shell getprop` output (or `key=value` lines) and pass
 `-TargetPropertiesPath .\target-getprop.txt` instead; unsupported properties
 are discarded before the profile is sent to GitHub.
+When a target profile is supplied and `-TargetModel` is left at its default,
+the workflow derives the target hint from `ro.product.device`.
 
 The downloader accepts only known Google distribution hosts (`dl.google.com`,
 `storage.googleapis.com`, `android.googleapis.com`, and
